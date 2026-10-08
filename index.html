@@ -196,7 +196,7 @@
   <section class="hero" style="padding:0">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow">Muy pronto · Lista de espera abierta</div>
+        <div class="eyebrow">Lista de espera · Primer mes gratis</div>
         <h1>Tu piel, <em>medida</em><br>semana a semana.</h1>
         <p class="lead">Una rutina te la puede dar cualquiera. Ifacelis <b>escanea tu piel cada semana, la compara con la anterior</b> y ajusta tu plan según lo que de verdad está cambiando.</p>
         <form class="wait" id="apuntate" novalidate>
@@ -353,7 +353,7 @@
       <div class="cta">
         <div class="eyebrow">Lista de espera</div>
         <h2>Empieza a ver <em>cómo cambia tu piel.</em></h2>
-        <p class="sub">Te avisaremos en cuanto Ifacelis esté disponible. Sin spam, y te puedes borrar cuando quieras.</p>
+        <p class="sub">Apúntate ahora y tu primer mes será gratis (después, 4,99 €/mes). Te avisaremos en cuanto Ifacelis esté disponible. Sin spam, y te puedes borrar cuando quieras.</p>
         <form class="wait" novalidate>
           <label class="field">
             <input type="email" name="email" required autocomplete="email" placeholder="Tu correo electrónico" aria-label="Correo electrónico">
@@ -411,7 +411,7 @@
       btn.disabled = false;
       if (!error || error.code === "23505") {
         msg.className = "msg ok";
-        msg.textContent = error ? "Ya estabas en la lista. Te avisaremos." : "¡Listo! Te avisaremos en cuanto abramos.";
+        msg.textContent = error ? "Ya estabas en la lista: tu primer mes gratis sigue reservado." : "¡Listo! Tu primer mes gratis está reservado. Te avisaremos en cuanto abramos.";
         form.reset();
       } else {
         msg.className = "msg err";
