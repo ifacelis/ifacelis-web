@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ifacelis · Tu piel, analizada con IA</title>
+<meta name="description" content="Escanea tu cara, descubre qué necesita tu piel y sigue una rutina hecha para ti, con productos reales y seguimiento. Apúntate a la lista de espera de Ifacelis.">
+<meta property="og:title" content="Ifacelis · Tu piel, analizada con IA">
+<meta property="og:description" content="Escaneo facial, rutina personalizada y seguimiento. Apúntate a la lista de espera.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ifacelis.com">
+<meta name="theme-color" content="#F6F3EF">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F3EF; --ink:#2B2725; --muted:#5C534D; --soft:#8A8079;
+    --stone:#E8E2DA; --lilac:#E1DCEC; --rose:#EBD5D1; --white:#FFFFFF;
+    --lilac-ink:#4F4578; --rose-ink:#7A4650; --stone-ink:#4A403B;
+    --radius:28px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  img,svg{display:block}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.03em;line-height:1.05}
+  h1{font-size:clamp(40px,7vw,72px)}
+  h2{font-size:clamp(30px,4.5vw,46px)}
+  h3{font-size:20px;letter-spacing:-0.02em}
+  .soft{color:var(--soft)}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  p{margin:0}
+
+  /* header */
+  header{position:sticky;top:0;z-index:10;background:rgba(246,243,239,.88);backdrop-filter:blur(10px);border-bottom:1px solid transparent}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .logo{font-size:26px;font-weight:600;letter-spacing:-0.03em;text-decoration:none}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font:inherit;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;transition:transform .15s ease,opacity .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:disabled{opacity:.6;cursor:default;transform:none}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+
+  /* hero */
+  .hero{padding:48px 0 72px}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+  .hero p.lead{font-size:18px;color:var(--muted);max-width:520px;margin-top:20px}
+  .hero .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+  .pill{font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;background:var(--white);border:1px solid var(--stone)}
+
+  form.wait{margin-top:28px;display:flex;flex-direction:column;gap:12px;max-width:520px}
+  .field{display:flex;gap:8px;background:var(--white);border:1px solid var(--stone);border-radius:999px;padding:6px 6px 6px 20px}
+  .field input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;font-size:16px;color:var(--ink)}
+  .field:focus-within{border-color:var(--ink)}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted)}
+  .check input{margin-top:3px;width:18px;height:18px;accent-color:var(--ink);flex-shrink:0}
+  .msg{font-size:14px;font-weight:600;min-height:21px}
+  .msg.ok{color:#2F6B4F}.msg.err{color:#A3373F}
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+  .visual{position:relative;aspect-ratio:1/1.08;border-radius:40px;background:var(--stone);overflow:hidden}
+  .visual .c1{position:absolute;width:78%;aspect-ratio:1;border-radius:50%;background:var(--lilac);right:-12%;top:8%}
+  .visual .c2{position:absolute;width:44%;aspect-ratio:1;border-radius:50%;background:var(--rose);left:6%;bottom:6%}
+  .visual svg.face{position:absolute;left:50%;bottom:-4%;transform:translateX(-50%);width:68%;height:auto}
+  .tag{position:absolute;display:flex;align-items:center;gap:8px;background:var(--white);padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(43,39,37,.10)}
+  .tag i{width:9px;height:9px;border-radius:50%;display:block}
+  .scan{position:absolute;left:12%;right:12%;top:46%;height:2px;background:#fff;box-shadow:0 0 16px 4px rgba(255,255,255,.85);animation:scan 3.2s ease-in-out infinite}
+  @keyframes scan{0%,100%{top:30%}50%{top:70%}}
+  @media (prefers-reduced-motion:reduce){.scan{animation:none}}
+
+  /* sections */
+  section{padding:72px 0}
+  .head{max-width:640px;margin-bottom:40px;display:flex;flex-direction:column;gap:14px}
+  .head p{font-size:17px;color:var(--muted)}
+
+  .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .card{background:var(--white);border:1px solid var(--stone);border-radius:var(--radius);padding:28px;display:flex;flex-direction:column;gap:12px}
+  .num{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+  .card p{color:var(--muted);font-size:15px}
+
+  .concerns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .concern{border-radius:22px;padding:22px 18px;font-weight:700;font-size:16px;display:flex;flex-direction:column;gap:6px}
+  .concern span{font-size:13px;font-weight:500;color:var(--muted)}
+
+  .features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .feature{border-radius:var(--radius);padding:30px;display:flex;flex-direction:column;gap:12px;min-height:200px}
+  .feature p{font-size:15px;color:var(--stone-ink)}
+  .feature .ico{width:52px;height:52px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .dark{background:var(--ink);color:var(--bg);border-radius:36px;padding:44px}
+  .dark p{color:#DCD4CC;font-size:16px;margin-top:14px}
+  .phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:28px}
+  .phase{background:#3A3431;border-radius:20px;padding:16px}
+  .phase b{display:block;font-size:15px}
+  .phase span{font-size:13px;color:#C9C0B8}
+
+  .cta{text-align:center;background:var(--rose);border-radius:40px;padding:64px 24px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .cta form.wait{margin-left:auto;margin-right:auto;width:100%}
+
+  footer{padding:40px 0 56px;color:var(--muted);font-size:13px}
+  .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;border-top:1px solid var(--stone);padding-top:24px}
+  .foot nav{display:flex;gap:18px;flex-wrap:wrap}
+  .foot a{text-decoration:none;font-weight:600;color:var(--ink)}
+  .disclaimer{margin-top:16px;max-width:760px}
+
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr}
+    .visual{max-width:460px;width:100%;margin:0 auto}
+    .steps{grid-template-columns:1fr}
+    .concerns{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .features,.split{grid-template-columns:1fr}
+    .dark{padding:32px 24px}
+    .phases{grid-template-columns:1fr}
+  }
+  @media (max-width:420px){
+    .field{flex-direction:column;border-radius:24px;padding:8px}
+    .field input{padding:10px 12px}
+    .nav .btn{padding:0 16px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#">Ifacelis</a>
+    <a class="btn" href="#apuntate">Apúntate</a>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Muy pronto · Lista de espera abierta</div>
+        <h1 style="margin-top:16px">Tu piel, <span class="soft">analizada con IA</span></h1>
+        <p class="lead">Escanea tu cara con el móvil, descubre qué necesita tu piel y sigue una rutina hecha solo para ti, con productos reales, alimentación y seguimiento semana a semana.</p>
+        <div class="pills">
+          <span class="pill">Para ella y para él</span>
+          <span class="pill">Low cost o premium</span>
+          <span class="pill">Desde el móvil, sin descargar nada</span>
+        </div>
+        <form class="wait" id="apuntate" novalidate>
+          <label class="field">
+            <span class="hp" aria-hidden="true"></span>
+            <input type="email" name="email" required autocomplete="email" placeholder="Tu correo electrónico" aria-label="Correo electrónico">
+            <button class="btn" type="submit">Quiero acceso</button>
+          </label>
+          <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label class="check"><input type="checkbox" name="consent" required> <span>Acepto recibir un correo cuando Ifacelis esté disponible y la <a href="privacidad.html">política de privacidad</a>.</span></label>
+          <p class="msg" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div class="visual" aria-hidden="true">
+        <div class="c1"></div><div class="c2"></div>
+        <svg class="face" viewBox="0 0 300 380" fill="none">
+          <defs>
+            <radialGradient id="sk" cx="42%" cy="38%" r="66%"><stop offset="0%" stop-color="#F4E6DA"/><stop offset="55%" stop-color="#E7CFBE"/><stop offset="100%" stop-color="#CBA993"/></radialGradient>
+            <linearGradient id="sh" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#FFFFFF" stop-opacity=".22"/><stop offset="100%" stop-color="#7A5A48" stop-opacity=".22"/></linearGradient>
+          </defs>
+          <path d="M150 52 C90 52 66 104 66 178 C66 252 104 316 150 322 C196 316 234 252 234 178 C234 104 210 52 150 52 Z" fill="url(#sk)"/>
+          <path d="M150 52 C90 52 66 104 66 178 C66 252 104 316 150 322 C196 316 234 252 234 178 C234 104 210 52 150 52 Z" fill="url(#sh)" stroke="#C4A28C" stroke-width="1.5" stroke-opacity=".6"/>
+          <ellipse cx="118" cy="172" rx="25" ry="11" fill="#D2B19C" opacity=".45"/>
+          <ellipse cx="182" cy="172" rx="25" ry="11" fill="#D2B19C" opacity=".45"/>
+          <path d="M96 150 C110 141 128 141 140 147 M160 147 C172 141 190 141 204 150" stroke="#9C7B6B" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+          <path d="M100 176 C110 166 128 166 138 176 C128 182 110 182 100 176 Z M162 176 C172 166 190 166 200 176 C190 182 172 182 162 176 Z" fill="#F3EAE3"/>
+          <circle cx="119" cy="175" r="6" fill="#7A5E4C"/><circle cx="181" cy="175" r="6" fill="#7A5E4C"/>
+          <circle cx="119" cy="175" r="2.5" fill="#2B2725"/><circle cx="181" cy="175" r="2.5" fill="#2B2725"/>
+          <path d="M100 176 C110 165 128 165 138 176 M162 176 C172 165 190 165 200 176" stroke="#6A4C42" stroke-width="2" stroke-linecap="round"/>
+          <path d="M150 178 L150 226" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity=".3"/>
+          <path d="M142 182 C140 205 134 222 132 232" stroke="#C29E89" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+          <path d="M132 234 C138 244 162 244 168 234" stroke="#B48C77" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="141" cy="238" rx="5" ry="2.6" fill="#A47A66" opacity=".6"/><ellipse cx="159" cy="238" rx="5" ry="2.6" fill="#A47A66" opacity=".6"/>
+          <path d="M124 270 C134 262 143 263 150 266 C157 263 166 262 176 270 C164 274 136 274 124 270 Z" fill="#CFA08F"/>
+          <path d="M125 271 C136 285 164 285 175 271 C162 275 138 275 125 271 Z" fill="#DDB2A2"/>
+          <ellipse cx="150" cy="302" rx="18" ry="8" fill="#FFFFFF" opacity=".25"/>
+        </svg>
+        <div class="scan"></div>
+        <div class="tag" style="top:12%;left:6%"><i style="background:#B7AED3"></i>Líneas finas</div>
+        <div class="tag" style="top:34%;right:5%"><i style="background:#DDA2A6"></i>Rojez</div>
+        <div class="tag" style="top:58%;left:5%"><i style="background:#C08468"></i>Poros</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section id="como">
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Cómo funciona</div>
+        <h2>Tres pasos y <span class="soft">sabes qué hacer</span></h2>
+      </div>
+      <div class="steps">
+        <div class="card">
+          <div class="num" style="background:var(--stone)">1</div>
+          <h3>Cuéntanos de ti</h3>
+          <p>Un cuestionario corto: edad, qué quieres mejorar, alergias y tu presupuesto. Así nunca te recomendamos algo que no te va bien.</p>
+        </div>
+        <div class="card">
+          <div class="num" style="background:var(--lilac)">2</div>
+          <h3>Escanea tu cara</h3>
+          <p>Tres fotos guiadas con la cámara del móvil: de frente y de cada lado, para ver también mejillas y mandíbula.</p>
+        </div>
+        <div class="card">
+          <div class="num" style="background:var(--rose)">3</div>
+          <h3>Recibe tu plan</h3>
+          <p>Tu informe de piel y un plan con rutina de mañana y noche, productos reales, cantidades exactas y alimentación.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUÉ ANALIZA -->
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Qué analiza</div>
+        <h2>Toda tu piel, <span class="soft">no solo el acné</span></h2>
+        <p>La IA revisa doce parámetros y te dice, zona por zona, qué está bien y qué conviene cuidar.</p>
+      </div>
+      <div class="concerns">
+        <div class="concern" style="background:var(--rose)">Acné<span>granitos e imperfecciones</span></div>
+        <div class="concern" style="background:var(--lilac)">Arrugas<span>líneas finas y expresión</span></div>
+        <div class="concern" style="background:var(--stone)">Rojez<span>sensibilidad y rosácea</span></div>
+        <div class="concern" style="background:var(--white);border:1px solid var(--stone)">Manchas<span>tono desigual</span></div>
+        <div class="concern" style="background:var(--white);border:1px solid var(--stone)">Poros<span>tamaño y brillo</span></div>
+        <div class="concern" style="background:var(--stone)">Ojeras<span>contorno de ojos</span></div>
+        <div class="concern" style="background:var(--lilac)">Hidratación<span>tirantez y barrera</span></div>
+        <div class="concern" style="background:var(--rose)">Cicatrices<span>marcas y textura</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUÉ INCLUYE -->
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Qué incluye</div>
+        <h2>Un plan que <span class="soft">te acompaña cada día</span></h2>
+      </div>
+      <div class="features">
+        <div class="feature" style="background:var(--stone)">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A403B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg></div>
+          <h3>Rutina con productos reales</h3>
+          <p>Más de 200 productos de farmacia, perfumería y cosmética coreana. Eliges presupuesto y te decimos cuánto echar: tres gotas, un guisante, dos dedos.</p>
+        </div>
+        <div class="feature" style="background:var(--lilac)">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4F4578" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 3-3 5-3 7-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z"/></svg></div>
+          <h3>Racha diaria</h3>
+          <p>Marca tu rutina, el agua, la comida y el movimiento. Cada día cumplido suma a tu racha.</p>
+        </div>
+        <div class="feature" style="background:var(--rose)">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7A4650" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></div>
+          <h3>Chat con IA que conoce tu piel</h3>
+          <p>Pregunta lo que quieras sobre tu rutina o tus productos. Te responde con tu caso delante, no con consejos genéricos.</p>
+        </div>
+        <div class="feature" style="background:var(--white);border:1px solid var(--stone)">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2B2725" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3l7 7-9 9H5v-7z"/><path d="M11 6l7 7"/></svg></div>
+          <h3>Maquillaje, cejas y barba</h3>
+          <p>Según la forma de tu cara, tu subtono y tus rasgos: qué te favorece para el día, para la noche o para cuidar cejas y barba.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FASES -->
+  <section>
+    <div class="wrap split">
+      <div class="dark">
+        <div class="eyebrow" style="color:#C9C0B8">Seguimiento</div>
+        <h2 style="margin-top:14px">Un plan que <span style="color:#C9C0B8">nunca se acaba</span></h2>
+        <p>Cada escaneo compara tu piel con la anterior y ajusta tu rutina. Cuando el problema mejora, pasas de fase.</p>
+        <div class="phases">
+          <div class="phase"><b>1 · Corregir</b><span>Lo que más te preocupa</span></div>
+          <div class="phase"><b>2 · Mejorar</b><span>Afinar y prevenir</span></div>
+          <div class="phase"><b>3 · Mantener</b><span>Para siempre</span></div>
+        </div>
+      </div>
+      <div class="card" style="justify-content:center;border-radius:36px;padding:40px">
+        <div class="eyebrow">Tu evolución</div>
+        <h2 style="font-size:clamp(26px,3.6vw,36px)">Antes y después, <span class="soft">con tus propias fotos</span></h2>
+        <p style="font-size:16px">Un diario de fotos para ver cómo cambia tu piel semana a semana, y una puntuación que te dice cuánto has mejorado.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="wrap">
+      <div class="cta">
+        <div class="eyebrow">Lista de espera</div>
+        <h2>Sé de las primeras personas <span class="soft">en probarlo</span></h2>
+        <p style="color:var(--stone-ink);max-width:520px">Te avisaremos por correo en cuanto Ifacelis esté disponible. Sin spam, y te puedes borrar cuando quieras.</p>
+        <form class="wait" novalidate>
+          <label class="field">
+            <input type="email" name="email" required autocomplete="email" placeholder="Tu correo electrónico" aria-label="Correo electrónico">
+            <button class="btn" type="submit">Apuntarme</button>
+          </label>
+          <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label class="check" style="text-align:left"><input type="checkbox" name="consent" required> <span>Acepto recibir un correo cuando Ifacelis esté disponible y la <a href="privacidad.html">política de privacidad</a>.</span></label>
+          <p class="msg" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><b style="color:var(--ink);font-size:18px">Ifacelis</b> · © 2026</div>
+      <nav>
+        <a href="https://instagram.com/ifacelis" rel="noopener" target="_blank">Instagram</a>
+        <a href="https://tiktok.com/@ifacelis" rel="noopener" target="_blank">TikTok</a>
+        <a href="privacidad.html">Privacidad</a>
+      </nav>
+    </div>
+    <p class="disclaimer">Ifacelis ofrece un análisis cosmético y recomendaciones de cuidado y bienestar. No realiza diagnósticos médicos ni sustituye la consulta con un dermatólogo.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ===== CONFIGURACIÓN: pega aquí los datos de tu proyecto de Supabase =====
+  // Supabase > Project Settings > API (o "Data API" / "API Keys")
+  const SUPABASE_URL = "https://skkgfwmenvcrfseqqyeg.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_mYDsYNXuC769Uh8jF_SiuA_P6ejd7UF";
+  // ========================================================================
+
+  const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_KEY.startsWith("PEGA_");
+  const db = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+  const params = new URLSearchParams(location.search);
+  const source = params.get("utm_source") || params.get("ref") || (document.referrer ? new URL(document.referrer).hostname : "directo");
+
+  document.querySelectorAll("form.wait").forEach(form => {
+    const msg = form.querySelector(".msg");
+    const btn = form.querySelector("button");
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      msg.className = "msg"; msg.textContent = "";
+      const email = form.email.value.trim().toLowerCase();
+      if (form.website.value) return; // bot
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = "msg err"; msg.textContent = "Revisa el correo, parece que falta algo."; return; }
+      if (!form.consent.checked) { msg.className = "msg err"; msg.textContent = "Marca la casilla para poder avisarte."; return; }
+      if (!db) { msg.className = "msg err"; msg.textContent = "Vista previa: la lista de espera aún no está conectada."; return; }
+      btn.disabled = true;
+      const { error } = await db.from("waitlist").insert({ email, consent: true, source: source.slice(0, 80) });
+      btn.disabled = false;
+      if (!error || error.code === "23505") {
+        msg.className = "msg ok";
+        msg.textContent = error ? "Ya estabas en la lista. Te avisaremos." : "¡Listo! Te avisaremos en cuanto abramos.";
+        form.reset();
+      } else {
+        msg.className = "msg err";
+        msg.textContent = "No se ha podido guardar. Inténtalo de nuevo en un momento.";
+        console.error(error);
+      }
+    });
+  });
+</script>
+</body>
+</html>
