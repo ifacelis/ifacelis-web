@@ -175,7 +175,21 @@
     .tl{grid-template-columns:1fr;gap:6px}
     .cta{padding:60px 20px;border-radius:28px}
   }
-</style>
+
+    /* ===== Adaptación a todas las pantallas ===== */
+    img,svg,video{max-width:100%;height:auto}
+    h1,h2,h3,h4,p,b,span{overflow-wrap:break-word}
+    @media (max-width:480px){
+      .trust{gap:6px 16px}
+      .trust span:nth-child(even){display:none}
+      .param{padding:20px 16px}
+      .param b{font-size:clamp(18px,5.6vw,24px);hyphens:auto}
+    }
+    @media (max-width:360px){
+      .chip{padding:6px 8px;font-size:9px}
+      .chip b{font-size:11px}
+    }
+  </style>
 </head>
 <body>
 
@@ -196,7 +210,7 @@
   <section class="hero" style="padding:0">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow">Lista de espera · 30 % de descuento</div>
+        <div class="eyebrow">Lista de espera · 30&nbsp;% el primer mes</div>
         <h1>Tu piel, <em>medida</em><br>semana a semana.</h1>
         <p class="lead">Una rutina te la puede dar cualquiera. Ifacelis <b>escanea tu piel cada semana, la compara con la anterior</b> y ajusta tu plan según lo que de verdad está cambiando.</p>
         <form class="wait" id="apuntate" novalidate>
@@ -353,7 +367,7 @@
       <div class="cta">
         <div class="eyebrow">Lista de espera</div>
         <h2>Empieza a ver <em>cómo cambia tu piel.</em></h2>
-        <p class="sub">Apúntate ahora y tu primer mes te costará 3,49 € en lugar de 4,99 € (30 % de descuento). Te avisaremos en cuanto Ifacelis esté disponible. Sin spam, y te puedes borrar cuando quieras.</p>
+        <p class="sub">Apúntate ahora y llévate un <b>30&nbsp;% de descuento en tu primer mes</b>. Te avisaremos en cuanto Ifacelis esté disponible. Sin spam, y te puedes borrar cuando quieras.</p>
         <form class="wait" novalidate>
           <label class="field">
             <input type="email" name="email" required autocomplete="email" placeholder="Tu correo electrónico" aria-label="Correo electrónico">
