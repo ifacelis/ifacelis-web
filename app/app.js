@@ -207,7 +207,7 @@ function nav(active) {
   const items = [["hoy", "home", "Hoy"], ["plan", "leaf", "Plan"], ["progreso", "chart", "Progreso"], ["estilo", "brush", "Estilo"]];
   return `<nav class="nav">${items.map(([r, i, t]) => `<a href="#/${r}" class="${active === r ? "on" : ""}">${icon(i, 22, active === r ? 2.2 : 1.8)}${t}</a>`).join("")}</nav>`;
 }
-const fab = () => `<a class="fab" href="#/chat" aria-label="Chat con Ifacelis IA">${icon("chat", 24, 2)}</a>`;
+const fab = () => `<a class="fab" href="#/chat" aria-label="Chat con Lis">${icon("chat", 24, 2)}</a>`;
 const topbar = (right = `<a class="icon-btn" href="#/cuenta" aria-label="Mi cuenta">${icon("user", 20)}</a>`) =>
   `<div class="topbar"><a class="brand" href="#/hoy">Ifacelis</a>${right}</div>`;
 const backBtn = (to = "#/hoy", label = "Volver") => `<a class="back" href="${to}">${icon("back", 18, 2.2)} ${label}</a>`;
@@ -412,7 +412,7 @@ function scanFlow(kind) {
       <div class="stack" style="gap:6px"><div class="eyebrow">Antes de escanear</div><h2>Tus fotos, solo para ti</h2></div>
       <div class="card stack small">
         <div class="row">${icon("lock", 20)}<p class="small">Se guardan en una carpeta privada. Nadie más puede verlas.</p></div>
-        <div class="row">${icon("scan", 20)}<p class="small">Una IA las analiza para tu informe y tu seguimiento. No hacemos reconocimiento facial.</p></div>
+        <div class="row">${icon("scan", 20)}<p class="small">Lis, tu asistente virtual, las analiza para tu informe y tu seguimiento. No hacemos reconocimiento facial.</p></div>
         <div class="row">${icon("out", 20)}<p class="small">Puedes borrar tus fotos y tu cuenta cuando quieras desde "Mi cuenta".</p></div>
       </div>
       <label class="check"><input type="checkbox" id="ok"><span>Doy mi consentimiento expreso para que Ifacelis analice las fotos de mi cara con inteligencia artificial para generar mi informe y mi seguimiento, según la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
@@ -568,7 +568,7 @@ function paywall(r) {
       <div class="row"><div class="prod-thumb">${icon("bottle")}</div><div><h3>Crema ████ calmante</h3><p class="small">Un guisante · mañana</p></div></div>
       <div class="row"><div class="prod-thumb">${icon("sun")}</div><div><h3>SPF 50 ██████</h3><p class="small">Dos dedos · cada mañana</p></div></div></div>
       <div class="over">${icon("lock", 26)}<b>Tu rutina está lista para desbloquear</b></div></div>
-    <div class="stack small" style="gap:8px">${["Rutina de mañana y noche con productos reales y cuánto usar", "Agua, alimentación y hábitos para tu piel", "Revisión cada semana con 3 fotos: ves lo que mejora", "Racha diaria, chat con IA y maquillaje según tus rasgos"].map((t) => `<div class="row" style="gap:10px">${icon("check", 18, 2.4)}<span>${t}</span></div>`).join("")}</div>
+    <div class="stack small" style="gap:8px">${["Rutina de mañana y noche con productos reales y cuánto usar", "Agua, alimentación y hábitos para tu piel", "Revisión cada semana con 3 fotos: ves lo que mejora", "Racha diaria, chat con Lis y maquillaje según tus rasgos"].map((t) => `<div class="row" style="gap:10px">${icon("check", 18, 2.4)}<span>${t}</span></div>`).join("")}</div>
     <div><span class="price">${PRICE_FIRST}</span><span class="small"> el primer mes</span><p class="small">Después ${PRICE}/mes. Cancela cuando quieras.</p></div>
     <label class="check"><input type="checkbox" id="wd"><span>Quiero empezar ya y acepto las <a href="/terminos.html" target="_blank">condiciones</a>. Entiendo que, al empezar el servicio, pierdo el derecho de desistimiento de 14 días.</span></label>
     <button class="btn" id="pay">Desbloquear mi plan</button>
@@ -850,9 +850,9 @@ SCREENS.chat = () => {
   const draw = () => {
     const list = S.chat || [];
     $app.innerHTML = `<div class="page" style="padding-bottom:110px">
-      <div class="between">${backBtn("#/hoy")}<span class="tiny">Ifacelis IA</span></div>
+      <div class="between">${backBtn("#/hoy")}<span class="tiny">Lis · tu asistente virtual</span></div>
       <div class="chat" id="msgs">
-        <div class="msg assistant">Hola 👋 Soy Ifacelis IA. Conozco tu informe y tu plan: pregúntame lo que quieras sobre tu piel, tus productos o tus hábitos.</div>
+        <div class="msg assistant">Hola 👋 Soy Lis, tu asistente virtual de Ifacelis. Conozco tu informe y tu plan: pregúntame lo que quieras sobre tu piel, tus productos o tus hábitos.</div>
         ${list.map((m) => `<div class="msg ${m.role}">${esc(m.content)}</div>`).join("")}
         ${S.ui.typing ? `<div class="msg assistant dim">Escribiendo…</div>` : ""}
       </div>
