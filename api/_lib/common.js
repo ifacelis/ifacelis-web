@@ -83,7 +83,7 @@ export async function claude({ model, system, content, max_tokens = 4000, histor
   });
   if (!res.ok) {
     console.error("Anthropic", res.status, await res.text());
-    throw new HttpError(502, "La IA no está disponible ahora mismo. Prueba en unos minutos.");
+    throw new HttpError(502, "Lis no está disponible ahora mismo. Prueba en unos minutos.");
   }
   const data = await res.json();
   return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
@@ -91,9 +91,9 @@ export async function claude({ model, system, content, max_tokens = 4000, histor
 
 export function parseJson(text) {
   const s = text.indexOf("{"), e = text.lastIndexOf("}");
-  if (s < 0 || e < s) throw new HttpError(502, "La IA ha dado una respuesta rara. Prueba otra vez.");
+  if (s < 0 || e < s) throw new HttpError(502, "Lis se ha liado con la respuesta. Prueba otra vez.");
   try { return JSON.parse(text.slice(s, e + 1)); }
-  catch { throw new HttpError(502, "La IA ha dado una respuesta rara. Prueba otra vez."); }
+  catch { throw new HttpError(502, "Lis se ha liado con la respuesta. Prueba otra vez."); }
 }
 
 // ---------- Fotos ----------
