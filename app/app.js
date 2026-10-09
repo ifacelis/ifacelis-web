@@ -263,7 +263,7 @@ SCREENS.login = () => {
   if (st.step === "email") {
     $app.innerHTML = `<div class="page no-nav" style="justify-content:center;min-height:100dvh">
       <a class="back" href="/">${icon("back", 18, 2.2)} ifacelis.com</a>
-      <div class="stack" style="gap:6px;margin-top:10px"><div class="eyebrow">Tu piel, analizada con IA</div><h1>Entra en <span class="dim">Ifacelis</span></h1></div>
+      <div class="stack" style="gap:6px;margin-top:10px"><div class="eyebrow">Tu piel, semana a semana</div><h1>Entra en <span class="dim">Ifacelis</span></h1></div>
       <p>Sin contraseñas: te enviamos un código a tu correo. Una cuenta es para una sola persona.</p>
       <form id="f" class="stack">
         <div class="field"><label for="em">Tu correo</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div>
