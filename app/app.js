@@ -264,11 +264,11 @@ SCREENS.login = () => {
     $app.innerHTML = `<div class="page no-nav" style="justify-content:center;min-height:100dvh">
       <a class="back" href="/">${icon("back", 18, 2.2)} ifacelis.com</a>
       <div class="stack" style="gap:6px;margin-top:10px"><div class="eyebrow">Tu piel, semana a semana</div><h1>Entra en <span class="dim">Ifacelis</span></h1></div>
-      <p>Sin contraseñas: te enviamos un código a tu correo. Una cuenta es para una sola persona.</p>
+      <p>Sin contraseñas: pon tu correo y te enviamos un enlace para entrar con un solo clic.</p>
       <form id="f" class="stack">
         <div class="field"><label for="em">Tu correo</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div>
         <label class="check"><input type="checkbox" id="ok" required><span>Tengo 14 años o más y acepto las <a href="/terminos.html" target="_blank">condiciones</a> y la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
-        <button class="btn" id="b">Enviarme el código</button>
+        <button class="btn" id="b">Entrar</button>
       </form>
       ${legal}</div>`;
     document.getElementById("f").onsubmit = async (e) => {
@@ -276,19 +276,19 @@ SCREENS.login = () => {
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Enviando…";
       st.email = document.getElementById("em").value.trim().toLowerCase();
       try { await D.signIn(st.email); st.step = "code"; render(); }
-      catch (err) { toast(/rate|limit/i.test(err.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido enviar. Revisa el correo."); b.disabled = false; b.textContent = "Enviarme el código"; }
+      catch (err) { toast(/rate|limit/i.test(err.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido enviar. Revisa el correo."); b.disabled = false; b.textContent = "Entrar"; }
     };
   } else {
     $app.innerHTML = `<div class="page no-nav" style="justify-content:center;min-height:100dvh">
       <button class="back" id="bk">${icon("back", 18, 2.2)} Cambiar correo</button>
-      <h2>Mira tu correo</h2>
-      <p>Hemos enviado un código a <b>${esc(st.email)}</b>. Escríbelo aquí o pulsa el enlace del correo. Si no lo ves, mira en spam.</p>
-      <form id="f" class="stack"><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
+      <h2>Revisa tu correo 💌</h2>
+      <p>Te hemos enviado un enlace a <b>${esc(st.email)}</b>. Pulsa <b>“Entrar en Ifacelis”</b> en el correo y entrarás directamente. Si no lo ves en un minuto, mira en spam o promociones.</p>
+      <form id="f" class="stack" style="display:none"><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
       <button class="btn" id="b">Entrar</button></form>
-      <button class="link-btn small" id="again">Reenviar código</button></div>`;
+      <button class="link-btn small" id="again">Reenviar el enlace</button></div>`;
     document.getElementById("bk").onclick = () => { st.step = "email"; render(); };
-    document.getElementById("again").onclick = async () => { try { await D.signIn(st.email); toast("Código reenviado"); } catch { toast("Espera un minuto antes de pedir otro."); } };
-    document.getElementById("code").focus();
+    document.getElementById("again").onclick = async () => { try { await D.signIn(st.email); toast("Enlace reenviado"); } catch { toast("Espera un minuto antes de pedir otro."); } };
+    
     document.getElementById("f").onsubmit = async (e) => {
       e.preventDefault();
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Entrando…";
