@@ -3,7 +3,8 @@ import catalog from "./catalogo.js";
 import { PLAN } from "./prompts.js";
 
 export const env = (k, fallback) => {
-  const v = process.env[k];
+  // .trim() y sin comillas: así un espacio o salto de línea al pegar la clave no la rompe
+  const v = (process.env[k] || "").trim().replace(/^["']|["']$/g, "");
   if (!v && fallback === undefined) throw new Error(`Falta la variable de entorno ${k}`);
   return v || fallback;
 };
