@@ -15,8 +15,9 @@ export const POST = handler(async (request) => {
   checkPaths(uid, photos, 3);
 
   const db = admin();
+  const ip = (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;
   const [account, profile] = await Promise.all([getAccount(uid), getProfile(uid)]);
-  if (!profile?.questionnaire) throw new HttpError(400, "Primero completa el cuestionario.");
+  if (kind === "weekly" && !profile?.questionnaire) throw new HttpError(400, "Primero completa el cuestionario.");
   if (!profile?.photo_consent_at) throw new HttpError(400, "Necesitamos tu consentimiento para analizar las fotos.");
 
   const { data: last } = await db.from("scans").select("*").eq("user_id", uid)
@@ -32,6 +33,11 @@ export const POST = handler(async (request) => {
     const restart = isActive(account) && account.needs_restart;
     if (!free && !restart) throw new HttpError(403, "Tu informe gratis ya está hecho.", { code: "used" });
     if (free && !restart) {
+      // Freno de abusos: como mucho 3 informes gratis al día desde la misma conexión
+      const since = new Date(Date.now() - 24 * 3600e3).toISOString();
+      const { count } = await db.from("scans").select("id", { count: "exact", head: true })
+        .eq("ip", ip).eq("kind", "initial").gte("created_at", since);
+      if (ip && (count || 0) >= 3) throw new HttpError(429, "Has hecho varios escaneos gratis hoy. Vuelve mañana.");
       // Reservamos el escaneo gratis ya, para que no se pueda pedir dos veces a la vez
       const { data: claimed } = await db.from("accounts").update({ free_scan_used: true })
         .eq("user_id", uid).eq("free_scan_used", false).select("user_id");
@@ -59,7 +65,7 @@ export const POST = handler(async (request) => {
   async function runScan() {
   // ----- IA -----
   const images = await photoBlocks(photos);
-  const ctx = { cuestionario: profile.questionnaire };
+  const ctx = { cuestionario: profile?.questionnaire || null };
   if (kind === "initial" && last) ctx.historial_anterior = { fecha: last.created_at, analisis: slimScan(last.result) };
   if (kind === "weekly") { ctx.escaneo_anterior = slimScan(last?.result); ctx.fase_actual = account.phase; }
 
@@ -84,7 +90,7 @@ export const POST = handler(async (request) => {
 
   const score = Math.round(Number(result.puntuacion_global)) || null;
   const { data: scan, error } = await db.from("scans")
-    .insert({ user_id: uid, cycle: account.cycle, kind, photos, result, score }).select("*").single();
+    .insert({ user_id: uid, cycle: account.cycle, kind, photos, result, score, ip }).select("*").single();
   if (error) throw error;
   claimedFree = false; // ya está guardado: el gratis queda gastado
 

@@ -11,6 +11,7 @@ export const POST = handler(async (request) => {
   const [account, profile] = await Promise.all([getAccount(uid), getProfile(uid)]);
   if (!isActive(account)) throw new HttpError(402, "Tu plan es parte de Ifacelis Pro.", { code: "pay" });
   if (account.needs_restart) throw new HttpError(400, "Primero haz tu nuevo escaneo inicial.");
+  if (!profile?.questionnaire) throw new HttpError(400, "Primero completa el cuestionario.");
 
   const { data: scan } = await db.from("scans").select("*").eq("user_id", uid).eq("cycle", account.cycle)
     .order("created_at", { ascending: false }).limit(1).maybeSingle();

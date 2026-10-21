@@ -7,6 +7,7 @@ export const POST = handler(async (request) => {
   const uid = user.id;
   const account = await getAccount(uid);
   if (isActive(account)) throw new HttpError(400, "Ya tienes Ifacelis Pro.");
+  if (user.is_anonymous || !user.email) throw new HttpError(400, "Añade y confirma tu correo antes de pagar.");
   if (account.sub_status === "none" && !account.free_scan_used)
     throw new HttpError(400, "Primero haz tu escaneo gratis.");
 
