@@ -187,3 +187,70 @@ p{margin:0;line-height:1.55;color:var(--muted)}
 .legal{font-size:11px;color:var(--soft);line-height:1.5;text-align:center}
 hr{border:0;border-top:1px solid var(--stone);margin:4px 0}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.row > svg{flex-shrink:0}
+
+/* ===== Capa premium (19-10-2026): tipografía serif, brillos y animación ===== */
+:root{--bg:#F1EBE5;--serif:'Cormorant Garamond','Times New Roman',serif;--ease:cubic-bezier(.2,.7,.2,1)}
+body{background:radial-gradient(70% 40% at 100% 10%,rgba(243,217,208,.55),transparent 65%),var(--bg);background-attachment:fixed}
+h1,.h1{font-family:var(--serif);font-weight:500;font-size:46px;letter-spacing:-.015em;line-height:1}
+h2,.h2{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.01em;line-height:1.05}
+h1 .dim,h2 .dim{font-style:italic;font-weight:400;color:#7A706A}
+.brand{font-family:var(--serif);font-weight:500;font-size:28px;letter-spacing:-.01em}
+.eyebrow{letter-spacing:.2em;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:26px;height:1px;background:currentColor;opacity:.6}
+.eyebrow.center{justify-content:center}
+.page{animation:pageIn .6s var(--ease)}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.card{background:rgba(255,255,255,.66);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-color:rgba(221,211,201,.8);box-shadow:0 10px 30px rgba(60,44,36,.05)}
+.tint-stone{background:rgba(232,226,218,.85)}.tint-lilac{background:rgba(225,220,236,.9)}.tint-rose{background:rgba(235,213,209,.9)}
+.tint-ink{background:radial-gradient(120% 120% at 90% 0%,#4A4250 0%,#2A2423 50%,#1E1A19 100%);box-shadow:0 18px 40px rgba(33,29,27,.25)}
+.btn{position:relative;overflow:hidden;background:#211D1B;box-shadow:0 10px 24px rgba(33,29,27,.18)}
+.btn::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.2) 50%,transparent 70%);transform:translateX(-120%);animation:shine 4.5s ease-in-out infinite}
+.btn.ghost,.btn.soft{box-shadow:none}.btn.ghost::after,.btn.soft::after,.btn[disabled]::after{display:none}
+@keyframes shine{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.price{font-family:var(--serif);font-size:54px;font-weight:500}
+.ring .val b{font-family:var(--serif);font-weight:500;font-size:46px}
+.ring circle:last-child{transition:stroke-dashoffset 1.4s var(--ease)}
+.option{background:rgba(255,255,255,.7);transition:transform .2s var(--ease),border-color .2s}
+.option:active{transform:scale(.99)}
+.nav{background:rgba(250,247,244,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.topbar .icon-btn{background:rgba(255,255,255,.7)}
+
+/* cara de portada con escáner y etiquetas flotantes */
+.hero-face{position:relative;height:330px;margin:0 -18px}
+.hero-face img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;-webkit-mask-image:radial-gradient(ellipse 55% 60% at 50% 48%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 55% 60% at 50% 48%,#000 55%,transparent 100%);animation:breathe 9s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.hero-face .scanline,.scan-photo .scanline{left:12%;right:12%}
+.glass-chip{position:absolute;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:16px;background:rgba(250,247,244,.75);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.8);box-shadow:0 12px 30px rgba(60,44,36,.14);font-weight:700;font-size:13px;animation:floaty 6s ease-in-out infinite}
+.glass-chip i{width:8px;height:8px;border-radius:50%}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.scan-photo{position:relative;width:230px;height:300px;border-radius:120px;overflow:hidden;box-shadow:0 24px 60px rgba(60,44,36,.2)}
+.scan-photo img{width:100%;height:100%;object-fit:cover}
+.scan-photo .mesh{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.55) 1px,transparent 1.4px);background-size:9px 9px;mix-blend-mode:overlay;opacity:.7}
+.scanline{height:2px;background:linear-gradient(90deg,transparent,#fff,transparent);box-shadow:0 0 18px 5px rgba(201,190,227,.7)}
+.shell{overflow-x:clip}
+
+/* ===== Estética premium tipo portada (19-10-2026, v2) ===== */
+/* menos bloques de color pastel: cristal blanco con línea fina */
+.tint-stone,.tint-lilac,.tint-rose{background:rgba(255,255,255,.55)!important;border:1px solid rgba(221,211,201,.85)!important}
+.task{border:1px solid rgba(221,211,201,.85)}
+.display{font-size:52px;line-height:.95}
+.tint-ink .ring .val b{color:#F6F1EC}.tint-ink .ring .val span{color:#A99E96}
+/* inicio */
+.intro{min-height:100dvh;display:flex;flex-direction:column}
+.intro-top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:center;padding:16px 18px;max-width:480px;margin:0 auto}
+.intro-face{position:relative;height:56dvh;min-height:380px;overflow:hidden}
+.intro-face img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;filter:saturate(1.08) brightness(1.02);animation:breathe 9s ease-in-out infinite}
+.intro-face::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(241,235,229,.85) 0%,rgba(241,235,229,0) 14%,rgba(241,235,229,0) 70%,var(--bg) 100%)}
+.intro-face .scanline{z-index:2}
+.glass-card{position:absolute;z-index:3;padding:12px 16px;border-radius:18px;background:rgba(250,247,244,.72);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);border:1px solid rgba(255,255,255,.8);box-shadow:0 16px 36px rgba(60,44,36,.14);animation:floaty 6s ease-in-out infinite}
+.glass-card small{display:flex;align-items:center;gap:7px;font-size:12px;color:#5C534D}
+.glass-card small i{width:8px;height:8px;border-radius:50%}
+.glass-card b{display:block;font-size:18px;margin-top:2px}
+.intro-body{position:relative;z-index:4;margin-top:-70px;padding:0 22px 40px;display:flex;flex-direction:column;gap:18px}
+.intro-body>p{font-size:17px}
+.lux-steps{list-style:none;margin:6px 0 8px;padding:0;border-top:1px solid #DDD3C9}
+.lux-steps li{display:flex;align-items:center;gap:18px;padding:16px 2px;border-bottom:1px solid #DDD3C9}
+.lux-steps span{font-family:var(--serif);font-style:italic;font-size:38px;line-height:1;color:#B9ADA4;width:26px}
+.lux-steps b{display:block;font-size:16px}
+.lux-steps small{color:#8A8079;font-size:13px}

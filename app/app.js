@@ -145,6 +145,19 @@ let D = {
     if (error) throw error; return data.session;
   },
   async signOut() { await sb.auth.signOut(); },
+  async signInAnon() {
+    const { data, error } = await sb.auth.signInAnonymously();
+    if (error) throw error; return data.user;
+  },
+  async addEmail(email) {
+    const { error } = await sb.auth.updateUser({ email }, { emailRedirectTo: `${location.origin}/app/#/suscribirse` });
+    if (error) throw error;
+  },
+  async verifyEmail(email, token) {
+    const { data, error } = await sb.auth.verifyOtp({ email, token, type: "email_change" });
+    if (error) throw error;
+    const { data: u } = await sb.auth.getUser(); return u.user || data.user;
+  },
 };
 
 // ---------------------------------------------------------------------
@@ -168,8 +181,8 @@ async function boot() {
 }
 
 // ¿Qué pantalla toca obligatoriamente?
-function gate() {
-  if (!S.user) return "login";
+function gate(route) {
+  if (!S.user) return route === "login" ? "login" : "inicio";
   if (S.ui.confirmingPayment) return "confirmando";
   const a = S.account;
   if (isActive()) {
@@ -183,7 +196,6 @@ function gate() {
     return null;
   }
   if (["canceled", "unpaid", "incomplete_expired", "past_due"].includes(a.sub_status)) return "pausa";
-  if (!S.profile?.questionnaire) return "cuestionario";
   if (!a.free_scan_used || !S.scans.length) return "escaneo";
   return "informe";
 }
@@ -192,8 +204,8 @@ const FREE_ROUTES = new Set(["cuenta", "privacidad"]);
 function render() {
   window.scrollTo(0, 0);
   const route = (location.hash.replace(/^#\/?/, "").split("?")[0] || "hoy");
-  const forced = gate();
-  const allowed = (S.user && FREE_ROUTES.has(route)) || (forced === "pausa" && route === "informe") || (forced === "escaneo" && route === "cuestionario" && S.ui.q);
+  const forced = gate(route);
+  const allowed = (S.user && FREE_ROUTES.has(route)) || (forced === "pausa" && route === "informe") || (forced === "escaneo" && route === "cuestionario" && S.ui.q) || (forced === "informe" && route === "suscribirse");
   const screen = forced && !allowed ? forced : route;
   const fn = SCREENS[screen] || SCREENS.hoy;
   try { fn(); } catch (e) { console.error(e); $app.innerHTML = errorView(e); }
@@ -257,18 +269,46 @@ const legal = `<p class="legal">Ifacelis ofrece un análisis cosmético orientat
 // ---------------------------------------------------------------------
 const SCREENS = {};
 
+// ---------- Inicio (sin cuenta todavía) ----------
+SCREENS.inicio = () => {
+  $app.innerHTML = `<div class="intro">
+    <div class="intro-top"><a class="brand" href="/">Ifacelis</a><a class="small" href="#/login" style="font-weight:700">Entrar</a></div>
+    <div class="intro-face"><img src="/hero-face.jpg" alt=""><div class="scanline"></div>
+      <div class="glass-card" style="top:16%;left:18px"><small><i style="background:#B8AED6"></i>Hidratación</small><b>Bien</b></div>
+      <div class="glass-card" style="top:44%;right:18px;animation-delay:-2s"><small><i style="background:#DDA2A6"></i>Rojez</small><b>Leve</b></div>
+    </div>
+    <div class="intro-body">
+      <div class="eyebrow">Gratis · 1 minuto</div>
+      <h1 class="display">¿Qué necesita <span class="dim">tu piel?</span></h1>
+      <p>Escanea tu cara y Lis te dice qué le pasa a tu piel, zona por zona.</p>
+      <ol class="lux-steps">
+        <li><span>1</span><div><b>Escanea tu cara</b><small>3 fotos con el móvil</small></div></li>
+        <li><span>2</span><div><b>Lis analiza tu piel</b><small>Tu informe gratis</small></div></li>
+        <li><span>3</span><div><b>Ve tu solución</b><small>Rutina, productos y seguimiento</small></div></li>
+      </ol>
+      <button class="btn" id="go">${icon("camera", 20, 2)} Escanear mi piel gratis</button>
+      <p class="tiny" style="text-align:center">¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>
+      ${legal}
+    </div></div>`;
+  document.getElementById("go").onclick = async (e) => {
+    const b = e.currentTarget; b.disabled = true; b.textContent = "Un momento…";
+    try { S.user = await D.signInAnon(); await D.loadAll(); go("#/escaneo"); }
+    catch (err) { toast("No se ha podido empezar. Prueba otra vez en un momento."); b.disabled = false; b.innerHTML = `${icon("camera", 20, 2)} Escanear mi piel gratis`; }
+  };
+};
+
 // ---------- Entrar ----------
 SCREENS.login = () => {
   const st = S.ui.login || (S.ui.login = { step: "email", email: "" });
   if (st.step === "email") {
     $app.innerHTML = `<div class="page no-nav" style="justify-content:center;min-height:100dvh">
-      <a class="back" href="/">${icon("back", 18, 2.2)} ifacelis.com</a>
-      <div class="stack" style="gap:6px;margin-top:10px"><div class="eyebrow">Tu piel, semana a semana</div><h1>Entra en <span class="dim">Ifacelis</span></h1></div>
-      <p>Sin contraseñas: pon tu correo y te enviamos un enlace para entrar con un solo clic.</p>
+      <a class="back" href="#/">${icon("back", 18, 2.2)} Volver</a>
+      <div class="stack" style="gap:6px;margin-top:10px"><div class="eyebrow">Hola de nuevo</div><h1>Entra en <span class="dim">Ifacelis</span></h1></div>
+      <p>Sin contraseñas: te enviamos un correo con un enlace para entrar con un clic y un código. Una cuenta es para una sola persona.</p>
       <form id="f" class="stack">
         <div class="field"><label for="em">Tu correo</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div>
         <label class="check"><input type="checkbox" id="ok" required><span>Tengo 14 años o más y acepto las <a href="/terminos.html" target="_blank">condiciones</a> y la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
-        <button class="btn" id="b">Entrar</button>
+        <button class="btn" id="b">Enviarme el código</button>
       </form>
       ${legal}</div>`;
     document.getElementById("f").onsubmit = async (e) => {
@@ -276,19 +316,19 @@ SCREENS.login = () => {
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Enviando…";
       st.email = document.getElementById("em").value.trim().toLowerCase();
       try { await D.signIn(st.email); st.step = "code"; render(); }
-      catch (err) { toast(/rate|limit/i.test(err.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido enviar. Revisa el correo."); b.disabled = false; b.textContent = "Entrar"; }
+      catch (err) { toast(/rate|limit/i.test(err.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido enviar. Revisa el correo."); b.disabled = false; b.textContent = "Enviarme el código"; }
     };
   } else {
     $app.innerHTML = `<div class="page no-nav" style="justify-content:center;min-height:100dvh">
       <button class="back" id="bk">${icon("back", 18, 2.2)} Cambiar correo</button>
       <h2>Revisa tu correo 💌</h2>
-      <p>Te hemos enviado un enlace a <b>${esc(st.email)}</b>. Pulsa <b>“Entrar en Ifacelis”</b> en el correo y entrarás directamente. Si no lo ves en un minuto, mira en spam o promociones.</p>
-      <form id="f" class="stack" style="display:none"><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
+      <p>Hemos enviado un código a <b>${esc(st.email)}</b>. Pulsa <b>“Entrar en Ifacelis”</b> en el correo, o escribe aquí el código. Si no lo ves en un minuto, mira en spam o promociones.</p>
+      <form id="f" class="stack"><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
       <button class="btn" id="b">Entrar</button></form>
-      <button class="link-btn small" id="again">Reenviar el enlace</button></div>`;
+      <button class="link-btn small" id="again">Reenviar código</button></div>`;
     document.getElementById("bk").onclick = () => { st.step = "email"; render(); };
-    document.getElementById("again").onclick = async () => { try { await D.signIn(st.email); toast("Enlace reenviado"); } catch { toast("Espera un minuto antes de pedir otro."); } };
-    
+    document.getElementById("again").onclick = async () => { try { await D.signIn(st.email); toast("Código reenviado"); } catch { toast("Espera un minuto antes de pedir otro."); } };
+    document.getElementById("code").focus();
     document.getElementById("f").onsubmit = async (e) => {
       e.preventDefault();
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Entrando…";
@@ -331,7 +371,8 @@ SCREENS.cuestionario = () => {
   $app.innerHTML = `<div class="page no-nav">
     <div class="between">${st.i > 0 ? `<button class="back" id="prev">${icon("back", 18, 2.2)} Atrás</button>` : editing ? backBtn("#/cuenta") : "<span></span>"}<span class="tiny">${st.i + 1} de ${steps.length}</span></div>
     <div class="steps-bar">${steps.map((_, j) => `<span class="${j <= st.i ? "on" : ""}"></span>`).join("")}</div>
-    ${restart && st.i === 0 ? `<div class="notice info">¡Bienvenida de vuelta! Empezamos de nuevo: tus respuestas pueden haber cambiado.</div>` : ""}
+    ${isActive() && !restart && !S.profile?.questionnaire && st.i === 0 ? `<div class="notice info">Último paso: unas preguntas rápidas para que tu plan respete tus alergias, tu edad y tu presupuesto.</div>` : ""}
+    ${restart && st.i === 0 ? `<div class="notice info">¡Hola de nuevo! Empezamos desde el principio: tus respuestas pueden haber cambiado.</div>` : ""}
     <div class="stack" style="gap:6px"><h2>${esc(step.t)}</h2><p>${esc(step.s)}</p></div>
     ${body}
     <div style="flex:1"></div>
@@ -373,7 +414,7 @@ SCREENS.cuestionario = () => {
       await D.saveProfile({ questionnaire: q, budget: a.presupuesto });
       S.ui.q = null;
       if (editing && prevQ !== JSON.stringify(q)) { S.ui.planReason = "answers"; return go("#/generando"); }
-      go(editing ? "#/cuenta" : "#/escaneo");
+      go(editing ? "#/cuenta" : isActive() ? "#/generando" : "#/escaneo");
     } catch (e) { toast("No se ha podido guardar. Prueba otra vez."); btn.disabled = false; }
   };
 };
@@ -405,21 +446,22 @@ async function shrink(fileOrCanvas) {
 function scanFlow(kind) {
   const st = S.ui.scan?.kind === kind ? S.ui.scan : (S.ui.scan = { kind, stage: S.profile?.photo_consent_at ? "tips" : "consent", shots: {}, cur: 0, retry: null });
   const weekly = kind === "weekly";
-  const back = weekly ? backBtn("#/progreso") : `<button class="back" id="editq">${icon("back", 18, 2.2)} Mis respuestas</button>`;
+  const back = weekly ? backBtn("#/progreso") : "";
 
   if (st.stage === "consent") {
     $app.innerHTML = `<div class="page no-nav">${back}
       <div class="stack" style="gap:6px"><div class="eyebrow">Antes de escanear</div><h2>Tus fotos, solo para ti</h2></div>
       <div class="card stack small">
         <div class="row">${icon("lock", 20)}<p class="small">Se guardan en una carpeta privada. Nadie más puede verlas.</p></div>
-        <div class="row">${icon("scan", 20)}<p class="small">Lis, tu asistente virtual, las analiza para tu informe y tu seguimiento. No hacemos reconocimiento facial.</p></div>
+        <div class="row">${icon("scan", 20)}<p class="small">Lis las analiza para tu informe y tu seguimiento. No hacemos reconocimiento facial.</p></div>
         <div class="row">${icon("out", 20)}<p class="small">Puedes borrar tus fotos y tu cuenta cuando quieras desde "Mi cuenta".</p></div>
       </div>
-      <label class="check"><input type="checkbox" id="ok"><span>Doy mi consentimiento expreso para que Ifacelis analice las fotos de mi cara con inteligencia artificial para generar mi informe y mi seguimiento, según la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
+      <label class="check"><input type="checkbox" id="age"><span>Tengo 14 años o más y acepto las <a href="/terminos.html" target="_blank">condiciones</a>.</span></label>
+      <label class="check"><input type="checkbox" id="ok"><span>Doy mi consentimiento expreso para que Ifacelis analice las fotos de mi cara de forma automatizada para generar mi informe y mi seguimiento, según la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
       <div style="flex:1"></div><button class="btn" id="go">Continuar</button></div>`;
     bindEditQ();
     document.getElementById("go").onclick = async () => {
-      if (!document.getElementById("ok").checked) return toast("Marca la casilla para continuar.");
+      if (!document.getElementById("ok").checked || !document.getElementById("age").checked) return toast("Marca las dos casillas para continuar.");
       try { await D.saveProfile({ photo_consent_at: new Date().toISOString() }); st.stage = "tips"; render(); } catch { toast("No se ha podido guardar."); }
     };
     return;
@@ -504,8 +546,9 @@ function reviewView(st) {
 }
 
 async function analyzingView(st) {
-  const msgs = ["Subiendo tus fotos de forma privada…", "Revisando luz y ángulos…", "Analizando frente, nariz y contorno de ojos…", "Analizando mejillas y mandíbula…", "Preparando tu informe…"];
-  $app.innerHTML = `<div class="center-screen"><div style="position:relative;width:200px">${faceMap([], 200)}<div class="scanline"></div></div>
+  const msgs = ["Subiendo tus fotos de forma privada…", "Lis está revisando luz y ángulos…", "Lis analiza frente, nariz y contorno de ojos…", "Lis analiza mejillas y mandíbula…", "Preparando tu informe…"];
+  const front = st.shots.frente ? URL.createObjectURL(st.shots.frente) : "/hero-face.jpg";
+  $app.innerHTML = `<div class="center-screen"><div class="scan-photo"><img src="${front}" alt=""><div class="scanline"></div><div class="mesh"></div></div>
     <h2 id="am">${msgs[0]}</h2><p class="small">Tarda unos 30 segundos. No cierres la página.</p></div>`;
   let k = 0; const t = setInterval(() => { const el = document.getElementById("am"); if (el) el.textContent = msgs[Math.min(++k, msgs.length - 1)]; }, 6000);
   try {
@@ -547,8 +590,8 @@ SCREENS.informe = () => {
   const prios = (r.prioridades || []).map((id) => PARAM_NAMES[id] || id);
   $app.innerHTML = `${active ? "" : topbar()}<div class="page ${active ? "" : "no-nav"}">
     ${active ? backBtn("#/progreso") : ""}
-    <div class="stack" style="gap:6px"><div class="eyebrow">Tu informe · ${fmtLong(scan.created_at)}</div><h1>${esc(r.titulo || "Tu piel")}</h1></div>
-    <div class="card big row" style="justify-content:space-between">${ring(r.puntuacion_global)}<div class="stack" style="gap:4px;align-items:flex-end;text-align:right"><span class="tiny">TIPO DE PIEL</span><b style="font-size:20px;text-transform:capitalize">${esc(r.tipo_piel || "–")}</b>${prios.length ? `<span class="tiny" style="margin-top:8px">A TRABAJAR</span><b class="small">${prios.map(esc).join(" · ")}</b>` : ""}</div></div>
+    <div class="stack" style="gap:6px"><div class="eyebrow">Análisis de Lis · ${fmtLong(scan.created_at)}</div><h1>${esc(r.titulo || "Tu piel")}</h1></div>
+    <div class="card big tint-ink row" style="justify-content:space-between">${ring(r.puntuacion_global).replace(/#2B2725/g, "#F6F1EC").replace(/#E8E2DA/g, "#4A4250")}<div class="stack" style="gap:4px;align-items:flex-end;text-align:right;color:#F3EDE7"><span class="tiny" style="color:#A99E96">TIPO DE PIEL</span><b style="font-size:20px;text-transform:capitalize">${esc(r.tipo_piel || "–")}</b>${prios.length ? `<span class="tiny" style="margin-top:8px;color:#A99E96">A TRABAJAR</span><b class="small">${prios.map(esc).join(" · ")}</b>` : ""}</div></div>
     ${derivarBox(r)}
     ${r.cambio ? `<div class="notice info">${esc(r.cambio)}</div>` : ""}
     <div class="card big row" style="align-items:flex-start">${faceMap(r.parametros, 110)}<div class="stack small" style="gap:6px"><h3>Dónde lo vemos</h3>${["alto", "moderado", "leve"].map((l) => `<div class="row" style="gap:8px"><span class="swatch" style="width:12px;height:12px;background:${LVL_COLOR[l]}"></span><span class="tiny" style="text-transform:capitalize">${l}</span></div>`).join("")}</div></div>
@@ -556,24 +599,79 @@ SCREENS.informe = () => {
     ${active ? "" : paywall(r)}
     ${legal}
   </div>`;
-  const pay = document.getElementById("pay"); if (pay) pay.onclick = checkout;
+  const pay = document.getElementById("pay"); if (pay) pay.onclick = () => go("#/suscribirse");
 };
 
 function paywall(r) {
   return `<div class="card big tint-stone stack" style="gap:14px">
-    <div class="eyebrow">${esc(r.teaser ? "Tu siguiente paso" : "Ifacelis Pro")}</div>
-    <h2>${esc(r.teaser || "Tu plan para mejorarlo, paso a paso")}</h2>
+    <div class="eyebrow">Tu solución</div>
+    <h2>${esc(r.teaser || "Lis ya sabe qué necesita tu piel")}</h2>
     <div class="locked card"><div class="blur stack">
       <div class="row"><div class="prod-thumb">${icon("bottle")}</div><div><h3>Sérum ██████ 10%</h3><p class="small">3 gotas · noche</p></div></div>
       <div class="row"><div class="prod-thumb">${icon("bottle")}</div><div><h3>Crema ████ calmante</h3><p class="small">Un guisante · mañana</p></div></div>
       <div class="row"><div class="prod-thumb">${icon("sun")}</div><div><h3>SPF 50 ██████</h3><p class="small">Dos dedos · cada mañana</p></div></div></div>
-      <div class="over">${icon("lock", 26)}<b>Tu rutina está lista para desbloquear</b></div></div>
-    <div class="stack small" style="gap:8px">${["Rutina de mañana y noche con productos reales y cuánto usar", "Agua, alimentación y hábitos para tu piel", "Revisión cada semana con 3 fotos: ves lo que mejora", "Racha diaria, chat con Lis y maquillaje según tus rasgos"].map((t) => `<div class="row" style="gap:10px">${icon("check", 18, 2.4)}<span>${t}</span></div>`).join("")}</div>
-    <div><span class="price">${PRICE_FIRST}</span><span class="small"> el primer mes</span><p class="small">Después ${PRICE}/mes. Cancela cuando quieras.</p></div>
-    <label class="check"><input type="checkbox" id="wd"><span>Quiero empezar ya y acepto las <a href="/terminos.html" target="_blank">condiciones</a>. Entiendo que, al empezar el servicio, pierdo el derecho de desistimiento de 14 días.</span></label>
-    <button class="btn" id="pay">Desbloquear mi plan</button>
-    <p class="tiny" style="text-align:center">Pago seguro con Stripe</p></div>`;
+      <div class="over">${icon("lock", 26)}<b>Tu rutina está lista</b></div></div>
+    <button class="btn" id="pay">Ver mi solución</button></div>`;
 }
+
+// ---------- Suscribirse (la página de la solución) ----------
+SCREENS.suscribirse = () => {
+  if (isActive()) return go("#/hoy");
+  const st = S.ui.sub || (S.ui.sub = { step: "email", email: "" });
+  const needsEmail = !S.user?.email || S.user?.is_anonymous;
+  const r = lastScan()?.result || {};
+  const prios = (r.prioridades || []).map((id) => PARAM_NAMES[id] || id);
+  let account = "";
+  if (needsEmail && st.step === "email") {
+    account = `<form id="ef" class="stack"><div class="field"><label for="em">Tu correo, para guardar tu informe y tu plan</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div><button class="btn" id="eb">Continuar</button></form>
+      <p class="tiny" style="text-align:center">Te enviamos un código para confirmarlo. ¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>`;
+  } else if (needsEmail && st.step === "code") {
+    account = `<form id="cf" class="stack"><p class="small">Escribe el código que hemos enviado a <b>${esc(st.email)}</b> (mira también en spam).</p><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required><button class="btn" id="cb">Confirmar</button></form>
+      <button class="link-btn small" id="chg">Cambiar correo</button>`;
+  } else {
+    account = `<label class="check"><input type="checkbox" id="wd"><span>Quiero empezar ya y acepto las <a href="/terminos.html" target="_blank">condiciones</a>. Entiendo que, al empezar el servicio, pierdo el derecho de desistimiento de 14 días.</span></label>
+      <button class="btn" id="pay">Suscribirme y ver mi solución</button><p class="tiny" style="text-align:center">Pago seguro con Stripe · Cancela cuando quieras</p>`;
+  }
+  $app.innerHTML = `<div class="page no-nav">
+    ${backBtn("#/informe", "Mi informe")}
+    <div class="stack" style="gap:6px"><div class="eyebrow">Ifacelis Pro</div><h1>Tu solución <span class="dim">está lista</span></h1>
+    ${prios.length ? `<p>Lis ha preparado un plan para trabajar <b>${prios.map(esc).join(", ").toLowerCase()}</b>.</p>` : ""}</div>
+    <div class="stack">
+      ${[["bottle", "Tu rutina con productos reales", "Mañana y noche, según tu presupuesto: qué producto, cuánto usar (3 gotas, un guisante…) y dónde comprarlo.", "tint-lilac"],
+         ["flame", "Racha diaria", "Marca tu rutina, el agua, la comida y el descanso. Cada día cumplido suma.", "tint-rose"],
+         ["camera", "Tu evolución en fotos", "Revisión cada semana con 3 fotos y diario de fotos sin límite, con antes y después.", "tint-stone"],
+         ["leaf", "Alimentación y hábitos", "Qué comer más, qué reducir y cuánta agua beber, para tu piel.", "tint-lilac"],
+         ["chat", "Lis responde tus dudas", "Pregúntale lo que quieras sobre tu piel y tus productos.", "tint-rose"],
+         ["brush", "Maquillaje, cejas y barba", "Qué te favorece según la forma de tu cara y tu tono.", "tint-stone"]]
+        .map(([i, t, d, c]) => `<div class="card row ${c}" style="align-items:flex-start">${icon(i, 24)}<div><h3>${t}</h3><p class="small">${d}</p></div></div>`).join("")}
+    </div>
+    <div class="card big stack" style="gap:12px">
+      <div><span class="price">${PRICE_FIRST}</span><span class="small"> el primer mes</span><p class="small">Después ${PRICE}/mes. Sin permanencia.</p></div>
+      ${account}
+    </div>
+    ${legal}</div>`;
+
+  const ef = document.getElementById("ef");
+  if (ef) ef.onsubmit = async (e) => {
+    e.preventDefault(); const b = document.getElementById("eb"); b.disabled = true;
+    st.email = document.getElementById("em").value.trim().toLowerCase();
+    try { await D.addEmail(st.email); st.step = "code"; render(); }
+    catch (err) {
+      b.disabled = false;
+      if (/already|registered|exists/i.test(err.message)) toast("Ese correo ya tiene cuenta. Entra con él.");
+      else if (/rate|limit/i.test(err.message)) toast("Demasiados intentos. Espera unos minutos.");
+      else toast("No se ha podido enviar el código. Revisa el correo.");
+    }
+  };
+  const cf = document.getElementById("cf");
+  if (cf) cf.onsubmit = async (e) => {
+    e.preventDefault(); const b = document.getElementById("cb"); b.disabled = true;
+    try { S.user = await D.verifyEmail(st.email, document.getElementById("code").value.replace(/\D/g, "")); st.step = "pay"; render(); }
+    catch { toast("Código incorrecto o caducado."); b.disabled = false; }
+  };
+  const chg = document.getElementById("chg"); if (chg) chg.onclick = () => { st.step = "email"; render(); };
+  const pay = document.getElementById("pay"); if (pay) pay.onclick = checkout;
+};
 
 async function checkout(e) {
   const wd = document.getElementById("wd");
@@ -589,7 +687,7 @@ SCREENS.confirmando = () => {
   (async () => {
     for (let i = 0; i < 20 && !isActive(); i++) { await sleep(2000); await D.reloadAccount(); }
     S.ui.polling = false; S.ui.confirmingPayment = false;
-    if (isActive()) { toast("¡Bienvenida a Ifacelis Pro!"); go("#/hoy"); }
+    if (isActive()) { toast("¡Ya eres Ifacelis Pro!"); go("#/hoy"); }
     else { $app.innerHTML = `<div class="center-screen"><h2>Tu pago está en camino</h2><p>Stripe aún no nos ha confirmado el pago. Recarga en un minuto. Si el cargo aparece en tu banco y esto no cambia, escríbenos a hola@ifacelis.com.</p><button class="btn small" onclick="location.reload()">Recargar</button></div>`; }
   })();
 };
@@ -612,7 +710,7 @@ SCREENS.pausa = () => {
 // ---------- Creando el plan ----------
 SCREENS.generando = () => {
   if (!isActive()) return go("#/informe");
-  $app.innerHTML = `<div class="center-screen"><div style="position:relative;width:180px">${faceMap(lastScan()?.result?.parametros, 180)}<div class="scanline"></div></div>
+  $app.innerHTML = `<div class="center-screen"><div class="scan-photo"><img src="/hero-face.jpg" alt=""><div class="scanline"></div></div>
     <h2 id="gm">Eligiendo tus productos…</h2><p class="small">Estamos creando tu rutina, tu alimentación y tus tareas diarias. Tarda menos de un minuto.</p></div>`;
   if (S.ui.generating) return; S.ui.generating = true;
   const msgs = ["Eligiendo tus productos…", "Calculando cuánto usar de cada uno…", "Preparando tu alimentación…", "Creando tus tareas diarias…"];
@@ -886,7 +984,7 @@ SCREENS.cuenta = () => {
   $app.innerHTML = `<div class="page no-nav">
     ${backBtn(active ? "#/hoy" : "#/")}
     <h1>Mi <span class="dim">cuenta</span></h1>
-    <div class="card stack"><div class="kv"><b>Correo</b><span>${esc(S.user?.email)}</span></div><div class="kv"><b>Plan</b><span>${esc(status)}</span></div></div>
+    <div class="card stack"><div class="kv"><b>Correo</b><span>${esc(S.user?.email || "Sin correo todavía")}</span></div><div class="kv"><b>Plan</b><span>${esc(status)}</span></div></div>
     ${a.stripe_customer_id ? `<button class="btn ghost" id="portal">Gestionar o cancelar suscripción</button>` : ""}
     ${active ? `<p class="tiny">Si cancelas, sigues teniendo acceso hasta el final del mes pagado. Si vuelves más adelante, empiezas de nuevo con un escaneo nuevo.</p>` : ""}
     ${active ? `<button class="btn ghost" id="editq">Cambiar mis respuestas</button>` : ""}

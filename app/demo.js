@@ -49,12 +49,12 @@ const FEATURES = { result: { forma_rostro: "ovalado", subtono: "neutro", ojos: "
 
 export function makeDemo(S, realD) {
   const stage = new URLSearchParams(location.search).get("demo") || "pro";
-  const user = { id: "u", email: "demo@ifacelis.com" };
+  let user = stage === "pro" ? { id: "u", email: "demo@ifacelis.com" } : { id: "u", email: null, is_anonymous: true };
   const day = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toLocaleDateString("sv"); };
   const all = PLAN.plan.tareas_diarias.map((t) => t.id);
   const st = {
     nuevo: { profile: null, account: { sub_status: "none", free_scan_used: false, cycle: 1, phase: 1 }, scans: [], plan: null },
-    informe: { profile: { questionnaire: { sexo: "mujer", edad: 27 }, budget: "equilibrado", photo_consent_at: "x" }, account: { sub_status: "none", free_scan_used: true, cycle: 1, phase: 1 }, scans: [SCAN0], plan: null },
+    informe: { profile: { photo_consent_at: "x" }, account: { sub_status: "none", free_scan_used: true, cycle: 1, phase: 1 }, scans: [SCAN0], plan: null },
     pro: { profile: { questionnaire: { sexo: "mujer", edad: 27, objetivos: ["rojez"], alergias: [] }, budget: "equilibrado", photo_consent_at: "x" },
       account: { sub_status: "active", free_scan_used: true, cycle: 1, phase: 1, cycle_started_at: new Date(Date.now() - 22 * 864e5).toISOString(), sub_period_end: new Date(Date.now() + 9 * 864e5).toISOString(), stripe_customer_id: "cus" },
       scans: [SCAN0, weekly(1, 67, 3), weekly(2, 71, 6), weekly(3, 74, 9)], plan: PLAN,
@@ -63,7 +63,10 @@ export function makeDemo(S, realD) {
   if (stage === "pro") st.scans[3].created_at = new Date(Date.now() - 7 * 864e5).toISOString();
   const photos = { "u/a": face(20, "Inicio"), "u/w1": face(30, "Semana 1"), "u/w2": face(35, "Semana 2"), "u/w3": face(40, "Semana 3") };
   return {
-    async session() { return stage === "login" ? null : { user }; },
+    async session() { return stage === "nuevo" || stage === "login" ? null : { user }; },
+    async signInAnon() { return user; },
+    async addEmail() {},
+    async verifyEmail(email) { user = { id: "u", email }; return user; },
     async token() { return "demo"; },
     async loadAll() { S.profile = st.profile; S.account = st.account; S.scans = st.scans; S.plan = st.plan; S.logs = st.logs || []; S.features = null; },
     async reloadAccount() { S.account.sub_status = "active"; },
