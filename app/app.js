@@ -160,6 +160,15 @@ let D = {
   },
 };
 
+// Entra con el código del correo y, si venía de un escaneo sin cuenta, lo pasa a su cuenta
+async function verifyAndClaim(email, code) {
+  const anonToken = S.user?.is_anonymous ? await D.token() : null;
+  const session = await D.verify(email, code);
+  S.user = session.user;
+  if (anonToken) { try { await D.api("/api/claim", { anon_token: anonToken }); } catch (e) { console.warn(e); } }
+  await D.loadAll();
+}
+
 // ---------------------------------------------------------------------
 // Arranque
 // ---------------------------------------------------------------------
@@ -205,7 +214,7 @@ function render() {
   window.scrollTo(0, 0);
   const route = (location.hash.replace(/^#\/?/, "").split("?")[0] || "hoy");
   const forced = gate(route);
-  const allowed = (S.user && FREE_ROUTES.has(route)) || (forced === "pausa" && route === "informe") || (forced === "escaneo" && route === "cuestionario" && S.ui.q) || (forced === "informe" && route === "suscribirse");
+  const allowed = route === "login" || (S.user && FREE_ROUTES.has(route)) || (forced === "pausa" && route === "informe") || (forced === "escaneo" && route === "cuestionario" && S.ui.q) || (forced === "informe" && route === "suscribirse");
   const screen = forced && !allowed ? forced : route;
   const fn = SCREENS[screen] || SCREENS.hoy;
   try { fn(); } catch (e) { console.error(e); $app.innerHTML = errorView(e); }
@@ -333,8 +342,8 @@ SCREENS.login = () => {
       e.preventDefault();
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Entrando…";
       try {
-        const session = await D.verify(st.email, document.getElementById("code").value.replace(/\D/g, ""));
-        S.user = session.user; S.ui.login = null; await D.loadAll(); go("#/hoy");
+        await verifyAndClaim(st.email, document.getElementById("code").value.replace(/\D/g, ""));
+        S.ui.login = null; go("#/hoy");
       } catch { toast("Código incorrecto o caducado."); b.disabled = false; b.textContent = "Entrar"; }
     };
   }
@@ -658,7 +667,10 @@ SCREENS.suscribirse = () => {
     try { await D.addEmail(st.email); st.step = "code"; render(); }
     catch (err) {
       b.disabled = false;
-      if (/already|registered|exists/i.test(err.message)) toast("Ese correo ya tiene cuenta. Entra con él.");
+      if (/already|registered|exists/i.test(err.message)) {
+        try { await D.signIn(st.email); st.step = "code"; st.mode = "login"; render(); toast("Ese correo ya tiene cuenta: te hemos enviado un código para entrar."); }
+        catch { toast("Ese correo ya tiene cuenta. Espera un minuto y vuelve a intentarlo."); }
+      }
       else if (/rate|limit/i.test(err.message)) toast("Demasiados intentos. Espera unos minutos.");
       else toast("No se ha podido enviar el código. Revisa el correo.");
     }
@@ -666,7 +678,12 @@ SCREENS.suscribirse = () => {
   const cf = document.getElementById("cf");
   if (cf) cf.onsubmit = async (e) => {
     e.preventDefault(); const b = document.getElementById("cb"); b.disabled = true;
-    try { S.user = await D.verifyEmail(st.email, document.getElementById("code").value.replace(/\D/g, "")); st.step = "pay"; render(); }
+    const code = document.getElementById("code").value.replace(/\D/g, "");
+    try {
+      if (st.mode === "login") await verifyAndClaim(st.email, code);
+      else S.user = await D.verifyEmail(st.email, code);
+      st.step = "pay"; st.mode = null; render();
+    }
     catch { toast("Código incorrecto o caducado."); b.disabled = false; }
   };
   const chg = document.getElementById("chg"); if (chg) chg.onclick = () => { st.step = "email"; render(); };
