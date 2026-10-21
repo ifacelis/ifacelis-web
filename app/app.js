@@ -177,6 +177,10 @@ async function boot() {
   const session = await D.session();
   S.user = session?.user || null;
   if (S.user) await D.loadAll();
+  // Si hay un pago a medias, preguntamos a Stripe el estado real
+  if (S.user && S.account?.stripe_customer_id && !isActive() && !DEMO) {
+    try { const r = await D.api("/api/sync"); if (r.account) S.account = r.account; } catch {}
+  }
   if (!DEMO) sb.auth.onAuthStateChange(async (ev, session) => {
     if (ev === "SIGNED_IN" && !S.user) { S.user = session.user; await D.loadAll(); render(); }
     if (ev === "SIGNED_OUT") { S.user = null; render(); }
@@ -702,7 +706,10 @@ SCREENS.confirmando = () => {
   $app.innerHTML = `<div class="center-screen"><div class="spinner"></div><h2>Confirmando tu pago…</h2><p class="small">Solo unos segundos.</p></div>`;
   if (S.ui.polling) return; S.ui.polling = true;
   (async () => {
-    for (let i = 0; i < 20 && !isActive(); i++) { await sleep(2000); await D.reloadAccount(); }
+    for (let i = 0; i < 20 && !isActive(); i++) {
+      await sleep(2000);
+      try { const r = await D.api("/api/sync"); if (r.account) S.account = r.account; } catch { await D.reloadAccount(); }
+    }
     S.ui.polling = false; S.ui.confirmingPayment = false;
     if (isActive()) { toast("¡Ya eres Ifacelis Pro!"); go("#/hoy"); }
     else { $app.innerHTML = `<div class="center-screen"><h2>Tu pago está en camino</h2><p>Stripe aún no nos ha confirmado el pago. Recarga en un minuto. Si el cargo aparece en tu banco y esto no cambia, escríbenos a hola@ifacelis.com.</p><button class="btn small" onclick="location.reload()">Recargar</button></div>`; }
