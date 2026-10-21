@@ -19,7 +19,8 @@ export async function POST(request) {
       if (uid && obj.subscription) await applySubscription(uid, await s.subscriptions.retrieve(obj.subscription));
     } else if (event.type.startsWith("customer.subscription.")) {
       const uid = obj.metadata?.user_id || (await uidForCustomer(obj.customer));
-      if (uid) await applySubscription(uid, obj);
+      // Los avisos pueden llegar desordenados: siempre leemos el estado actual en Stripe
+      if (uid) await applySubscription(uid, await s.subscriptions.retrieve(obj.id));
     }
     return json({ received: true });
   } catch (e) {
