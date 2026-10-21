@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ifacelis · Tu piel, analizada en un minuto</title>
+<meta name="description" content="Escanea tu cara con el móvil y descubre qué necesita tu piel. Informe gratis y una rutina hecha para ti, con productos reales y seguimiento semana a semana.">
+<meta property="og:title" content="Ifacelis · Tu piel, analizada en un minuto">
+<meta property="og:description" content="Escanea tu piel gratis desde el móvil y descubre tu rutina.">
+<meta property="og:image" content="https://www.ifacelis.com/img/og.jpg">
+<meta name="theme-color" content="#F1EBE5">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,500,500i|plus-jakarta-sans:400,500,600,700,800&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="img/face-lg.jpg">
+<style>
+:root{
+  --bg:#F1EBE5; --bg2:#EAE2DA; --ink:#211D1B; --ink2:#2B2725; --muted:#5C534D; --soft:#8A8079; --line:#DDD3C9;
+  --white:#FFFFFF; --lilac:#C9BEE3; --lilac-soft:#E1DCEC; --rose:#E9C9C2; --rose-soft:#EBD5D1; --stone:#E8E2DA;
+  --serif:'Cormorant Garamond', 'Times New Roman', serif; --sans:'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+img{display:block;max-width:100%}
+.wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+
+/* tipografía */
+.eyebrow{display:flex;align-items:center;gap:14px;font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.eyebrow::before{content:"";width:42px;height:1px;background:currentColor;opacity:.7}
+.eyebrow.center{justify-content:center}
+h1,h2,h3.serif{font-family:var(--serif);font-weight:500;letter-spacing:-.015em;margin:0;line-height:.98}
+h1{font-size:clamp(56px,8.4vw,124px)}
+h2{font-size:clamp(42px,5.6vw,80px)}
+em,.it{font-style:italic;color:#6E6560;font-weight:400}
+.dark em,.dark .it{color:#CFC4BC}
+p{margin:0;line-height:1.6}
+.lead{font-size:clamp(18px,1.6vw,22px);color:#7A706A;max-width:580px}
+.lead b{color:var(--ink);font-weight:700}
+
+/* cabecera */
+header{position:sticky;top:0;z-index:50;background:rgba(241,235,229,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(221,211,201,.7)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:84px;gap:20px}
+.logo{font-family:var(--serif);font-size:34px;font-weight:500;text-decoration:none;letter-spacing:-.01em}
+.links{display:flex;gap:40px}
+.links a{text-decoration:none;color:var(--muted);font-weight:500;font-size:17px;transition:color .2s}
+.links a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 30px;border-radius:999px;background:var(--ink);color:#F6F1EC;font-weight:700;font-size:16px;text-decoration:none;border:0;cursor:pointer;position:relative;overflow:hidden;transition:transform .25s var(--ease),box-shadow .25s}
+.btn::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(-120%);transition:transform .9s var(--ease)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(33,29,27,.22)}
+.btn:hover::after{transform:translateX(120%)}
+.btn.big{height:66px;padding:0 38px;font-size:17px}
+.btn.light{background:#F6F1EC;color:var(--ink)}
+.btn svg{flex-shrink:0}
+.text-link{font-weight:600;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
+
+/* hero */
+.hero{position:relative;padding:40px 0 30px;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:center;min-height:calc(100vh - 84px);min-height:calc(100svh - 84px)}
+.hero-copy{position:relative;z-index:2;padding:30px 0}
+.hero-copy h1{margin:26px 0 32px}
+.cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:40px}
+.meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:34px;color:var(--soft);font-size:15px}
+.meta span+span::before{content:"·";margin-right:16px}
+.price-line{margin-top:22px;font-size:16px;color:var(--muted)}
+.price-line b{color:var(--ink)}
+
+.visual{position:relative;height:100%;min-height:640px}
+.face-wrap{position:absolute;top:-84px;bottom:-30px;left:0;right:min(-28px,calc((1240px - 100vw)/2 - 28px));-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 16%),linear-gradient(180deg,#000 82%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0%,#000 16%),linear-gradient(180deg,#000 82%,transparent 100%);mask-composite:intersect}
+.face-wrap img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;filter:saturate(1.08) brightness(1.02);animation:breathe 9s ease-in-out infinite;transform-origin:50% 40%}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+.scan{position:absolute;left:8%;right:-6%;height:2px;top:20%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);box-shadow:0 0 22px 6px rgba(201,190,227,.55);animation:scan 5.5s var(--ease) infinite;z-index:2}
+@keyframes scan{0%{top:14%;opacity:0}10%{opacity:1}50%{top:82%;opacity:1}60%{opacity:0}100%{top:82%;opacity:0}}
+.glow{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;pointer-events:none}
+.g1{width:520px;height:520px;background:radial-gradient(circle,#F3D9D0,transparent 70%);filter:blur(30px);opacity:.7;right:-80px;top:18%;animation:drift 14s ease-in-out infinite}
+.g2{display:none}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,24px)}}
+
+.chip{position:absolute;z-index:3;background:rgba(248,245,241,.86);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border:1px solid rgba(255,255,255,.75);border-radius:22px;padding:16px 22px;box-shadow:0 18px 44px rgba(60,44,36,.13);min-width:190px;animation:float 7s ease-in-out infinite}
+.chip small{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:15px}
+.chip small i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.chip b{display:block;font-size:24px;letter-spacing:-.01em;margin:3px 0 1px}
+.chip span{color:var(--muted);font-size:15px}
+.chip .up{color:#3F7A55;font-size:18px}
+.c1{top:13%;left:8%;animation-delay:-1s}
+.c2{top:48%;right:0;animation-delay:-3s}
+.c3{bottom:7%;left:12%;animation-delay:-5s}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+/* secciones */
+section{padding:120px 0}
+.head{max-width:760px;margin-bottom:64px}
+.head.center{margin-left:auto;margin-right:auto;text-align:center}
+.head h2{margin:22px 0 22px}
+.head p{color:var(--muted);font-size:19px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.step{background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:32px;padding:38px 34px 40px;position:relative;overflow:hidden;transition:transform .4s var(--ease),box-shadow .4s}
+.step:hover{transform:translateY(-6px);box-shadow:0 24px 50px rgba(60,44,36,.10)}
+.step .n{font-family:var(--serif);font-style:italic;font-size:88px;line-height:.8;color:#C8BDB4}
+.step h3{font-size:22px;margin:26px 0 10px;font-weight:700;letter-spacing:-.01em}
+.step p{color:var(--muted);font-size:16px}
+.step .bar{position:absolute;left:0;bottom:0;height:4px;width:100%;transform-origin:left;transform:scaleX(0);transition:transform 1.2s var(--ease) .2s}
+.step.in .bar{transform:scaleX(1)}
+
+/* bloque oscuro */
+.dark{background:radial-gradient(120% 120% at 85% 0%,#4A4250 0%,#2A2423 45%,#1E1A19 100%);color:#F3EDE7;border-radius:44px;position:relative;overflow:hidden}
+.dark .eyebrow{color:#BDB2AA}
+.dark p{color:#C9BFB8}
+.dark .glow{opacity:.28}
+.analyze{padding:96px 72px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.params{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.param{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);border-radius:20px;padding:18px 20px;display:flex;align-items:center;gap:14px;transition:background .3s,transform .3s var(--ease)}
+.param:hover{background:rgba(255,255,255,.1);transform:translateX(4px)}
+.param i{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 12px currentColor}
+.param b{font-weight:700;font-size:16px;color:#F3EDE7}
+.param span{display:block;font-size:13px;color:#A99E96;margin-top:2px}
+
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.feature{border-radius:32px;padding:36px 32px;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;position:relative;overflow:hidden;transition:transform .4s var(--ease)}
+.feature:hover{transform:translateY(-6px)}
+.feature .ico{position:absolute;top:30px;left:32px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center}
+.feature h3{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+.feature p{color:#5C534D;font-size:16px}
+
+.phases-sec{padding:90px 72px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.track{display:flex;flex-direction:column;gap:14px}
+.ph{display:flex;align-items:center;gap:20px;padding:22px 26px;border-radius:24px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+.ph .num{font-family:var(--serif);font-style:italic;font-size:44px;line-height:1;color:#CFC4BC;width:40px}
+.ph b{font-size:19px;color:#F3EDE7;display:block}
+.ph span{font-size:14px;color:#A99E96}
+.ph.on{background:rgba(255,255,255,.1);border-color:rgba(201,190,227,.5);box-shadow:0 0 0 1px rgba(201,190,227,.25),0 20px 40px rgba(0,0,0,.25)}
+.meter{height:6px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:30px}
+.meter i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--rose),var(--lilac));transition:width 2s var(--ease) .3s}
+.in .meter i{width:68%}
+
+.pricing{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:stretch}
+.price-card{background:var(--white);border:1px solid var(--line);border-radius:36px;padding:48px;display:flex;flex-direction:column;gap:22px;box-shadow:0 30px 60px rgba(60,44,36,.08)}
+.price{font-family:var(--serif);font-size:96px;line-height:.9;font-weight:500}
+.price small{font-family:var(--sans);font-size:17px;color:var(--muted);font-weight:500;margin-left:8px}
+.ticks{display:flex;flex-direction:column;gap:12px;margin:6px 0 10px;padding:0;list-style:none}
+.ticks li{display:flex;gap:12px;font-size:16px;color:var(--muted)}
+.ticks li::before{content:"";width:20px;height:20px;border-radius:50%;flex-shrink:0;background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F6F1EC' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12l4 4 8-9'/%3E%3C/svg%3E") center/12px no-repeat;margin-top:2px}
+.free-card{border-radius:36px;padding:48px;background:linear-gradient(160deg,var(--rose-soft),var(--lilac-soft));display:flex;flex-direction:column;justify-content:space-between;gap:30px}
+.free-card .big{font-family:var(--serif);font-size:72px;line-height:.9}
+
+.final{padding:120px 40px;text-align:center}
+.final h2{margin:24px auto 24px;max-width:900px}
+.final p{max-width:560px;margin:0 auto 40px;font-size:19px}
+
+footer{padding:56px 0 64px;border-top:1px solid var(--line)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.foot nav{display:flex;flex-wrap:wrap;gap:14px 26px}
+.foot a{color:var(--muted);text-decoration:none;font-weight:500}
+.foot a:hover{color:var(--ink)}
+.disclaimer{margin-top:26px;font-size:13px;color:var(--soft);max-width:760px}
+
+/* aparición al hacer scroll */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}
+.hero .reveal{animation:rise 1.1s var(--ease) forwards}
+.hero .reveal.d1{animation-delay:.12s}.hero .reveal.d2{animation-delay:.24s}.hero .reveal.d3{animation-delay:.36s}
+@keyframes rise{to{opacity:1;transform:none}}
+
+@media (max-width:980px){
+  .links{display:none}
+  .hero-grid{grid-template-columns:1fr;min-height:0}
+  .visual{order:-1;min-height:0;height:520px;margin:0 -28px}
+  .face-wrap{inset:-20px -10px 0}
+  .chip{min-width:0;padding:12px 16px;border-radius:18px}
+  .chip b{font-size:19px}.chip small,.chip span{font-size:13px}
+  .c1{top:8%;left:5%}.c2{top:46%;right:4%}.c3{bottom:4%;left:7%}
+  .steps,.features{grid-template-columns:1fr}
+  .analyze,.phases-sec{grid-template-columns:1fr;padding:64px 28px;gap:40px}
+  .pricing{grid-template-columns:1fr}
+  .price-card,.free-card{padding:36px 28px}
+  section{padding:84px 0}
+  .dark{border-radius:32px}
+  .final{padding:84px 24px}
+}
+@media (max-width:560px){
+  .wrap{padding:0 18px}
+  .nav{height:70px}.logo{font-size:30px}
+  .nav .btn{height:46px;padding:0 20px;font-size:14px}
+  .visual{height:380px;margin:0 -18px}
+  .hero{padding-top:10px}
+  .hero-copy h1{margin:20px 0 22px}
+  .btn.big{width:100%}
+  .cta-row{gap:18px;margin-top:30px}
+  .params{grid-template-columns:1fr}
+  .feature{min-height:220px}
+  .price{font-size:78px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="/">Ifacelis</a>
+    <nav class="links" aria-label="Secciones">
+      <a href="#como">Cómo funciona</a>
+      <a href="#analiza">Qué analiza</a>
+      <a href="#precio">Precio</a>
+    </nav>
+    <a class="btn" href="/app/">Escanear mi piel</a>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" style="padding-bottom:30px">
+    <div class="glow g1"></div><div class="glow g2"></div>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow reveal">Gratis · 1 minuto · Desde el móvil</div>
+        <h1 class="reveal d1">Tu piel, <em>analizada</em> en un minuto.</h1>
+        <p class="lead reveal d2">Escanea tu cara y Liss te dice <b>qué le pasa a tu piel, zona por zona.</b> Después, tu solución: una rutina hecha para ti, con productos reales y seguimiento semana a semana.</p>
+        <div class="cta-row reveal d3">
+          <a class="btn big" href="/app/"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Escanear mi piel gratis</a>
+          <a class="text-link" href="/app/#/login">Ya tengo cuenta</a>
+        </div>
+        <p class="price-line reveal d3">Informe <b>gratis</b>. Tu solución completa desde <b>3,49 €</b> el primer mes.</p>
+        <div class="meta reveal d3"><span>Para ella y para él</span><span>Low cost o premium</span><span>Sin descargar nada</span></div>
+      </div>
+
+      <div class="visual" aria-hidden="true">
+        <div class="face-wrap"><img src="img/face-lg.jpg" alt=""></div>
+        <div class="scan"></div>
+        <div class="chip c1"><small><i style="background:#B8AED6"></i>Hidratación</small><b>+12 % <span class="up">↑</span></b><span>vs. semana 0</span></div>
+        <div class="chip c2"><small><i style="background:#DDA2A6"></i>Rojez</small><b>Mejorando</b><span>3 revisiones seguidas</span></div>
+        <div class="chip c3"><small><i style="background:#C08468"></i>Semana 6</small><b>Fase 2 · Mejorar</b><span>Rutina ajustada</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section id="como">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow">Cómo funciona</div>
+        <h2>Tres pasos y <em>sabes qué hacer.</em></h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><div class="n">1</div><h3>Escanea tu cara</h3><p>Tres fotos guiadas con el móvil: de frente y de cada lado, para ver también mejillas y mandíbula.</p><div class="bar" style="background:var(--stone)"></div></div>
+        <div class="step reveal d1"><div class="n">2</div><h3>Liss analiza tu piel</h3><p>En segundos, tu informe gratis: puntuación, tipo de piel y qué hay en cada zona de tu cara.</p><div class="bar" style="background:var(--lilac)"></div></div>
+        <div class="step reveal d2"><div class="n">3</div><h3>Ve tu solución</h3><p>Tu rutina de mañana y noche con productos reales, cuánto usar de cada uno, alimentación y hábitos.</p><div class="bar" style="background:var(--rose)"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUÉ ANALIZA -->
+  <section id="analiza" style="padding-top:0">
+    <div class="wrap">
+      <div class="dark analyze reveal">
+        <div class="glow" style="width:380px;height:380px;background:var(--lilac);left:-120px;bottom:-120px"></div>
+        <div style="position:relative">
+          <div class="eyebrow">Qué analiza</div>
+          <h2 style="margin:22px 0 22px">Toda tu piel, <em>zona por zona.</em></h2>
+          <p style="font-size:18px;max-width:440px">Liss revisa ocho parámetros en las tres fotos y te dice qué está bien y qué conviene cuidar, sin juzgar y sin filtros.</p>
+        </div>
+        <div class="params" style="position:relative">
+          <div class="param"><i style="color:#E3A1A6;background:#E3A1A6"></i><div><b>Acné</b><span>Granitos e imperfecciones</span></div></div>
+          <div class="param"><i style="color:#C9BEE3;background:#C9BEE3"></i><div><b>Arrugas</b><span>Líneas finas y de expresión</span></div></div>
+          <div class="param"><i style="color:#E9B7AC;background:#E9B7AC"></i><div><b>Rojez</b><span>Sensibilidad y rosácea</span></div></div>
+          <div class="param"><i style="color:#D6B48F;background:#D6B48F"></i><div><b>Manchas</b><span>Tono desigual</span></div></div>
+          <div class="param"><i style="color:#B9C8D8;background:#B9C8D8"></i><div><b>Poros</b><span>Tamaño y brillo</span></div></div>
+          <div class="param"><i style="color:#A99BD0;background:#A99BD0"></i><div><b>Ojeras</b><span>Contorno de ojos</span></div></div>
+          <div class="param"><i style="color:#9FD0C0;background:#9FD0C0"></i><div><b>Hidratación</b><span>Tirantez y barrera</span></div></div>
+          <div class="param"><i style="color:#D9C2B4;background:#D9C2B4"></i><div><b>Cicatrices</b><span>Marcas y textura</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUÉ INCLUYE -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow">Tu solución</div>
+        <h2>Un plan que <em>vive contigo.</em></h2>
+      </div>
+      <div class="features">
+        <div class="feature reveal" style="background:var(--lilac-soft)"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4F4578" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4v3l2 3v13H8V8l2-3z"/><path d="M8 13h8"/></svg></div><h3>Productos reales</h3><p>Más de 200 productos según tu presupuesto, y cuánto usar: tres gotas, un guisante, dos dedos.</p></div>
+        <div class="feature reveal d1" style="background:var(--rose-soft)"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7A4650" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3-1-5 1-8z"/></svg></div><h3>Racha diaria</h3><p>Marca tu rutina, el agua, la comida y el descanso. Cada día cumplido suma.</p></div>
+        <div class="feature reveal d2" style="background:var(--stone)"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A403B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><h3>Tu evolución en fotos</h3><p>Revisión semanal con 3 fotos y diario sin límite, con tu antes y después.</p></div>
+        <div class="feature reveal" style="background:var(--stone)"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A403B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-14 14-14 0 9-6 14-14 14z"/><path d="M5 19l8-8"/></svg></div><h3>Alimentación y hábitos</h3><p>Qué comer más, qué reducir y cuánta agua beber, pensado para tu piel.</p></div>
+        <div class="feature reveal d1" style="background:var(--lilac-soft)"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4F4578" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg></div><h3>Liss responde tus dudas</h3><p>Pregúntale lo que quieras sobre tu piel y tus productos. Conoce tu caso.</p></div>
+        <div class="feature reveal d2" style="background:var(--rose-soft)"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7A4650" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 3l3 3-9 9-3-3z"/><path d="M9 12c-3 0-5 2-5 5 0 2-1 3-2 4 4 0 8-1 9-4"/></svg></div><h3>Maquillaje, cejas y barba</h3><p>Qué te favorece según la forma de tu cara y tu tono, para el día o para la noche.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FASES -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="dark phases-sec reveal">
+        <div class="glow" style="width:360px;height:360px;background:var(--rose);right:-100px;top:-100px"></div>
+        <div style="position:relative">
+          <div class="eyebrow">Seguimiento</div>
+          <h2 style="margin:22px 0 22px">Un plan que <em>nunca se acaba.</em></h2>
+          <p style="font-size:18px;max-width:440px">Cada semana, tres fotos. Liss compara tu piel con la semana anterior y ajusta tu rutina. Cuando mejoras, pasas de fase.</p>
+          <div class="meter"><i></i></div>
+        </div>
+        <div class="track" style="position:relative">
+          <div class="ph"><div class="num">1</div><div><b>Corregir</b><span>Lo que más te preocupa</span></div></div>
+          <div class="ph on"><div class="num">2</div><div><b>Mejorar</b><span>Afinar y prevenir</span></div></div>
+          <div class="ph"><div class="num">3</div><div><b>Mantener</b><span>La rutina mínima que conserva los resultados</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRECIO -->
+  <section id="precio" style="padding-top:0">
+    <div class="wrap">
+      <div class="head reveal">
+        <div class="eyebrow">Precio</div>
+        <h2>Empieza gratis, <em>sigue si te gusta.</em></h2>
+      </div>
+      <div class="pricing">
+        <div class="price-card reveal">
+          <div class="eyebrow">Ifacelis Pro</div>
+          <div><div class="price">3,49 €<small>el primer mes</small></div><p style="color:var(--muted);margin-top:10px">Después 4,99 €/mes. Sin permanencia: cancelas cuando quieras.</p></div>
+          <ul class="ticks">
+            <li>Rutina de mañana y noche con productos reales y cantidades</li>
+            <li>Revisión semanal con 3 fotos y diario de fotos sin límite</li>
+            <li>Racha diaria, alimentación y hábitos</li>
+            <li>Chat con Liss y consejos de maquillaje según tus rasgos</li>
+          </ul>
+          <a class="btn big" href="/app/">Empezar con mi escaneo gratis</a>
+        </div>
+        <div class="free-card reveal d1">
+          <div><div class="eyebrow">Siempre gratis</div><div class="big" style="margin-top:20px">Tu informe<br><em>de piel</em></div></div>
+          <p style="color:var(--muted);font-size:17px">Puntuación, tipo de piel y los ocho parámetros, zona por zona. Sin tarjeta y sin compromiso.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="dark final reveal">
+        <div class="glow" style="width:420px;height:420px;background:var(--lilac);right:-120px;top:-160px"></div>
+        <div class="glow" style="width:320px;height:320px;background:var(--rose);left:-80px;bottom:-140px"></div>
+        <div style="position:relative">
+          <div class="eyebrow center">Empieza ahora</div>
+          <h2>Empieza a ver <em>cómo cambia tu piel.</em></h2>
+          <p>Un minuto, tres fotos y tu informe gratis. Sin descargar nada.</p>
+          <a class="btn big light" href="/app/">Escanear mi piel gratis</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="logo" href="/" style="font-size:28px">Ifacelis</a>
+      <nav>
+        <a href="https://instagram.com/ifacelis" rel="noopener" target="_blank">Instagram</a>
+        <a href="https://tiktok.com/@ifacelis" rel="noopener" target="_blank">TikTok</a>
+        <a href="terminos.html">Condiciones</a>
+        <a href="privacidad.html">Privacidad</a>
+      </nav>
+    </div>
+    <p class="disclaimer">Ifacelis ofrece un análisis cosmético orientativo y recomendaciones de cuidado y bienestar. No realiza diagnósticos médicos ni sustituye la consulta con un dermatólogo. © 2026 Ifacelis.</p>
+  </div>
+</footer>
+
+<script>
+  // Aparición suave al hacer scroll
+  const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => {
+    es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: 0.15 }) : null;
+  document.querySelectorAll("section:not(.hero) .reveal").forEach((el) => io ? io.observe(el) : el.classList.add("in"));
+</script>
+</body>
+</html>

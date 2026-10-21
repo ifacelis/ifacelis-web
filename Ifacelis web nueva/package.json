@@ -1,0 +1,10 @@
+{
+  "name": "ifacelis",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "22.x" },
+  "dependencies": {
+    "@supabase/supabase-js": "2.49.4",
+    "stripe": "17.7.0"
+  }
+}
