@@ -117,10 +117,22 @@ export async function photoBlocks(paths) {
 }
 
 // ---------- Catálogo ----------
-export const productById = (id) => catalog.find((p) => p.id === id) || null;
+// Descripción breve del producto, a partir del catálogo (sin gastar IA)
+export function describe(p) {
+  if (!p) return "";
+  const act = (p.activos || "").split(",").map((x) => x.trim()).filter(Boolean).slice(0, 3);
+  const ayuda = (p.ayuda || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean).slice(0, 3);
+  const a = act.length ? `Con ${act.join(", ").toLowerCase()}.` : "";
+  const b = ayuda.length ? ` Ayuda con ${ayuda.join(", ")}.` : "";
+  const c = p.piel && !/todas/i.test(p.piel) ? ` Para piel ${p.piel.toLowerCase()}.` : "";
+  return (a + b + c).trim();
+}
+const withDesc = (p) => (p ? { ...p, desc: describe(p) } : null);
+export const productById = (id) => withDesc(catalog.find((p) => p.id === id) || null);
+export const allCatalog = () => catalog;
 
 const ORDER = ["low", "equilibrado", "premium"];
-export function filterCatalog(q = {}, budget = "equilibrado") {
+export function filterCatalog(q = {}, budget = "equilibrado", allGamas = false) {
   const alergias = (q.alergias || []).map((a) => String(a).toLowerCase());
   const noPerfume = alergias.some((a) => a.includes("perfum") || a.includes("fragan"));
   const edad = Number(q.edad) || 30;
@@ -129,7 +141,7 @@ export function filterCatalog(q = {}, budget = "equilibrado") {
   const gamas = new Set([ORDER[idx], ORDER[idx + 1]].filter(Boolean)); // su gama + la siguiente por si falta algo
   const otras = alergias.filter((a) => !a.includes("perfum") && !a.includes("fragan") && a !== "ninguna" && a.length > 2);
   return catalog.filter((p) => {
-    if (!gamas.has(p.gama)) return false;
+    if (!allGamas && !gamas.has(p.gama)) return false;
     if (noPerfume && p.perfume) return false;
     if (noRetinoid && p.retinoide) return false;
     const act = (p.activos || "").toLowerCase();
