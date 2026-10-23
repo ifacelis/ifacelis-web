@@ -5,6 +5,15 @@ import {
 } from "./_lib/common.js";
 
 const LISTS = ["rutina_manana", "rutina_noche"];
+const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const RETINOID = /retin|bakuchiol/;
+const KEYS = [
+  /azela/, RETINOID, /niacinam/, /vitamina c|ascorb|ascorbil/, /salicil|bha\b/, /glicol|lactic|mandel|aha\b/,
+  /hialuron/, /ceramid/, /peptid/, /centella|cica\b/, /cafeina/, /urea/,
+];
+// Sérum, tratamiento y ampollas se usan igual: cuentan como el mismo tipo de paso
+const fam = (t) => (["Sérum", "Tratamiento", "Ampollas"].includes(t) ? "tratamiento" : t);
+const keyActive = (text) => { const t = norm(text); return KEYS.find((re) => re.test(t)) || null; };
 const words = (t) => new Set(String(t || "").toLowerCase().split(/[,\s/]+/).filter((w) => w.length > 3));
 
 export const POST = handler(async (request) => {
@@ -25,7 +34,11 @@ export const POST = handler(async (request) => {
   const current = step.producto || null;
   const stepTipo = String(step.tipo || "").toLowerCase();
   const all = filterCatalog(profile?.questionnaire, "equilibrado", true);
-  const sameType = all.filter((p) => current ? p.tipo === current.tipo : stepTipo.includes(String(p.tipo).toLowerCase()));
+  // El activo principal del paso (p. ej. "Sérum con ácido azelaico") manda: la alternativa tiene que llevarlo
+  const key = keyActive(`${step.tipo || ""} ${step.activo || ""}`);
+  const sameType = all.filter((p) =>
+    (current ? fam(p.tipo) === fam(current.tipo) : stepTipo.includes(String(p.tipo).toLowerCase())) &&
+    (!key || key.test(norm(`${p.activos} ${p.nombre}`)) || (key === RETINOID && p.retinoide)));
   const target = new Set([...words(current?.ayuda), ...words(current?.activos), ...words(step.activo)]);
   const score = (p) => [...words(p.ayuda), ...words(p.activos)].filter((w) => target.has(w)).length;
 
@@ -42,7 +55,7 @@ export const POST = handler(async (request) => {
     const p = sameType.find((x) => x.id === product_id);
     if (!p) throw new HttpError(400, "Ese producto no encaja con este paso o con tus alergias.");
     const plan = structuredClone(row.plan);
-    plan[list][index] = { ...plan[list][index], producto_id: p.id, producto: productById(p.id), cantidad: plan[list][index].cantidad || p.cantidad };
+    plan[list][index] = { ...plan[list][index], producto_id: p.id, producto: productById(p.id), cantidad: (current && current.tipo === p.tipo && plan[list][index].cantidad) || p.cantidad || plan[list][index].cantidad };
     const { error } = await db.from("plans").update({ plan }).eq("id", row.id);
     if (error) throw error;
     return json({ plan: { ...row, plan } });
