@@ -214,9 +214,11 @@ function gate(route) {
 }
 
 const FREE_ROUTES = new Set(["cuenta", "privacidad"]);
+let lastRoute = null;
 function render() {
-  window.scrollTo(0, 0);
   const route = (location.hash.replace(/^#\/?/, "").split("?")[0] || "hoy");
+  // Solo volvemos arriba al cambiar de pantalla, no al marcar algo o abrir un panel
+  if (route !== lastRoute) { window.scrollTo(0, 0); lastRoute = route; }
   const forced = gate(route);
   const allowed = route === "login" || (S.user && FREE_ROUTES.has(route)) || (forced === "pausa" && route === "informe") || (forced === "escaneo" && route === "cuestionario" && S.ui.q) || (forced === "informe" && route === "suscribirse");
   const screen = forced && !allowed ? forced : route;
@@ -779,7 +781,7 @@ SCREENS.hoy = () => {
   const plan = S.plan?.plan || {};
   const W = semanaOk() ? plan.semana : null; const todayMenu = W?.dias?.[todayIdx()];
   if (!W && S.plan && !S.ui.semanaError) setTimeout(loadSemana, 300);
-  const tasks = (plan.tareas_diarias || []).map((t) => t.id === "comida" && todayMenu?.comida ? { ...t, detalle: `${todayMenu.comida.emoji || ""} ${todayMenu.comida.plato}`.trim() } : t);
+  const tasks = (plan.tareas_diarias || []).filter((t) => !/compra/i.test(`${t.titulo} ${t.detalle || ""}`)).map((t) => t.id === "comida" && todayMenu?.comida ? { ...t, detalle: `${emojisFor(todayMenu.comida.plato, FOOD, 2).join("") || todayMenu.comida.emoji || ""} ${todayMenu.comida.plato}`.trim() } : t);
   const day = today(); const log = logFor(day);
   const vasos = Number(plan.agua?.vasos) || 8;
   const waterN = Number((log.done.find((x) => x.startsWith("agua:")) || "agua:0").split(":")[1]);
@@ -835,8 +837,51 @@ function productArt(tipo = "", size = 64) {
   else body = `<rect x="16" y="34" width="48" height="32" rx="10" fill="url(#${g})"/><rect x="18" y="24" width="44" height="12" rx="5" fill="#2B2725"/><rect x="26" y="44" width="28" height="12" rx="2" fill="#fff" opacity=".7"/>`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 80 80" aria-hidden="true">${grad}<ellipse cx="40" cy="74" rx="22" ry="3" fill="#2B2725" opacity=".08"/>${body}</svg>`;
 }
-const HAB = { sueno: "moon", sol: "sun", agua: "drop", deporte: "run", estres: "leaf", piel: "scan", almohada: "bed", manos: "brush", movil: "chat" };
-const habitObj = (h) => typeof h === "string" ? { icono: "piel", titulo: h.split(/[:.]/)[0].slice(0, 40), detalle: h.includes(":") || h.includes(".") ? h.split(/[:.]/).slice(1).join(".").trim() : "" } : h;
+// Emojis según lo que dice el texto (así el dibujo siempre coincide con el plato o el hábito)
+const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const FOOD = [
+  ["pan|tostada|bocadillo|sandwich", "🍞"], ["queso|requeson", "🧀"], ["tomate", "🍅"], ["aguacate|guacamole", "🥑"],
+  ["tortilla|revuelto", "🍳"], ["huevo", "🥚"], ["yogur|kefir|leche", "🥛"], ["avena|granola|muesli|porridge|cereal", "🥣"],
+  ["arandano|frutos rojos|frutos del bosque|mora", "🫐"], ["fresa|frambuesa", "🍓"], ["platano", "🍌"], ["manzana", "🍎"], ["pera", "🍐"],
+  ["naranja|mandarina|clementina", "🍊"], ["kiwi", "🥝"], ["limon", "🍋"], ["uva", "🍇"], ["melocoton|nectarina", "🍑"], ["pina", "🍍"],
+  ["mango", "🥭"], ["sandia", "🍉"], ["melon", "🍈"], ["cereza", "🍒"], ["coco", "🥥"],
+  ["salmon|atun|merluza|bacalao|sardina|caballa|pescado|lubina|dorada|trucha|boqueron|rape|lenguado", "🐟"],
+  ["gamba|langostino", "🍤"], ["mejillon|almeja|marisco", "🦪"], ["pollo|pavo", "🍗"], ["ternera|carne|solomillo|lomo|cerdo", "🥩"], ["jamon", "🥓"],
+  ["lenteja|garbanzo|alubia|judion|hummus|legumbre|edamame", "🫘"], ["arroz|risotto", "🍚"], ["pasta|espagueti|macarron|fideo", "🍝"],
+  ["quinoa|cebada|cuscus|bulgur|trigo", "🌾"], ["boniato|batata", "🍠"], ["patata", "🥔"], ["ensalada", "🥗"],
+  ["espinaca|kale|rucula|lechuga|canonigo|acelga|berro", "🥬"], ["brocoli|coliflor", "🥦"], ["zanahoria", "🥕"], ["pimiento", "🫑"],
+  ["pepino|calabacin", "🥒"], ["berenjena", "🍆"], ["cebolla", "🧅"], ["ajo", "🧄"], ["champinon|seta", "🍄"], ["maiz", "🌽"], ["calabaza", "🎃"],
+  ["sopa|crema de|caldo|pure|guiso|estofado", "🍲"], ["nuez|nueces|almendra|pistacho|anacardo|avellana|frutos secos|cacahuete", "🥜"],
+  ["chocolate|cacao", "🍫"], ["te verde|te |infusion|matcha", "🍵"], ["cafe", "☕"], ["miel", "🍯"], ["aceite|aceituna|oliva", "🫒"],
+  ["wrap|fajita|burrito", "🌯"], ["pizza", "🍕"], ["sushi|poke", "🍣"], ["hamburguesa", "🍔"],
+].map(([k, e]) => [new RegExp(`\\b(${k})`), e]);
+const HABITS = [
+  ["almohada|funda|sabana", "🛏️"], ["duerm|dormir|sueno|descans|acuesta", "😴"], ["movil|pantalla|telefono", "📱"],
+  ["toque|toca|explot|granito|pellizc|manos", "🙅"], ["mueve|muevete|deporte|camina|ejercicio|entrena|actividad|yoga", "🏃"],
+  ["estres|respira|medita|relaj|calma", "🧘"], ["protector|spf|sol\\b|solar|uv\\b", "☀️"], ["agua|bebe|hidrata", "💧"],
+  ["tabaco|fuma", "🚭"], ["alcohol", "🍷"], ["maquillaje|desmaquill", "💄"], ["toalla", "🧺"], ["ducha", "🚿"],
+  ["limpi|lava", "🫧"], ["fruta|verdura|comida|come", "🥗"], ["gafas", "🕶️"], ["brocha|pincel", "🖌️"],
+].map(([k, e]) => [new RegExp(`\\b(${k})`), e]);
+const HAB_ICON = { sueno: "😴", sol: "☀️", agua: "💧", deporte: "🏃", estres: "🧘", piel: "✨", almohada: "🛏️", manos: "🙅", movil: "📱" };
+function emojisFor(text, table, max = 3) {
+  const t = ` ${norm(text)} `; const found = [];
+  for (const [re, e] of table) { const m = re.exec(t); if (m && !found.some((f) => f.e === e)) found.push({ i: m.index, e }); }
+  return found.sort((a, b) => a.i - b.i).slice(0, max).map((f) => f.e);
+}
+// Ilustración: hasta 3 emojis agrupados en un círculo suave
+function art(list, cls = "") {
+  const l = list.filter(Boolean).slice(0, 3);
+  return `<div class="food-art n${l.length || 1} ${cls}">${(l.length ? l : ["✨"]).map((e, i) => `<span class="fe e${i}">${e}</span>`).join("")}</div>`;
+}
+const foodArt = (name, fallback, cls) => art(emojisFor(name, FOOD).length ? emojisFor(name, FOOD) : [fallback || "🍽️"], cls);
+const habitArt = (h, cls) => { let e = emojisFor(h.titulo, HABITS, 2); if (!e.length) e = emojisFor(h.detalle, HABITS, 1); return art(e.length ? e : [HAB_ICON[h.icono] || "✨"], cls); };
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+// Los planes antiguos guardaban los hábitos como una frase: la partimos sin cortar palabras
+const habitObj = (h) => {
+  if (typeof h !== "string") return h;
+  const m = h.match(/^(.+?)[:.](\s|$)(.*)$/s);
+  return m ? { icono: "piel", titulo: m[1].trim(), detalle: cap(m[3].trim()) } : { icono: "piel", titulo: h.trim(), detalle: "" };
+};
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const todayIdx = () => (new Date().getDay() + 6) % 7;
 async function loadSemana() {
@@ -892,7 +937,7 @@ SCREENS.plan = () => {
     const A = P.alimentacion || {}; const W = semanaOk() ? P.semana : null;
     const sel = S.ui.dia ?? todayIdx(); const d = W?.dias?.[sel];
     const vasos = Number(P.agua?.vasos) || 8;
-    const meal = (k, t, m) => m ? `<div class="meal"><div class="meal-emoji">${esc(m.emoji || "🍽️")}</div><div style="flex:1"><span class="eyebrow">${t}</span><b>${esc(m.plato)}</b>${m.por_que ? `<span class="why">${icon("leaf", 13, 2)} ${esc(m.por_que)}</span>` : ""}</div></div>` : "";
+    const meal = (k, t, m) => m ? `<div class="meal">${foodArt(m.plato, m.emoji)}<div style="flex:1"><span class="eyebrow">${t}</span><b>${esc(m.plato)}</b>${m.por_que ? `<span class="why">${icon("leaf", 13, 2)} ${esc(m.por_que)}</span>` : ""}</div></div>` : "";
     body = `<div class="water card"><div class="between"><div><span class="eyebrow">Agua</span><div class="h2">${esc(P.agua?.litros || 2)} L <span class="dim small">al día</span></div></div>${icon("drop", 30)}</div>
         <div class="glass-row">${Array.from({ length: vasos }, () => `<span class="g"></span>`).join("")}</div><p class="tiny">${vasos} vasos · ${esc(P.agua?.nota || "repártelos a lo largo del día")}</p></div>
       ${!W ? (S.ui.semanaError ? `<div class="notice warn">${esc(S.ui.semanaError)} <button class="link-btn" id="retrySem">Reintentar</button></div>` : `<div class="card row" style="gap:12px"><div class="spinner" style="width:22px;height:22px;border-width:2px"></div><p class="small">Lis está preparando tu menú de esta semana…</p></div>`) : `
@@ -901,8 +946,9 @@ SCREENS.plan = () => {
       <div class="stack" style="gap:10px"><div class="eyebrow">${esc(DIAS[sel])}${sel === todayIdx() ? " · hoy" : ""}</div>
         ${meal("desayuno", "Desayuno", d?.desayuno)}${meal("comida", "Comida", d?.comida)}${meal("snack", "Merienda", d?.snack)}${meal("cena", "Cena", d?.cena)}</div>
       <h2 style="margin-top:6px">Estrellas de la semana</h2>
-      <div class="hscroll">${(W.alimentos_estrella || []).map((x) => `<div class="star"><div class="meal-emoji">${esc(x.emoji || "✨")}</div><b class="small">${esc(x.alimento)}</b><span class="tiny">${esc(x.beneficio)}</span></div>`).join("")}</div>
-      <button class="btn ghost" id="shop">${icon("bowl", 20)} Lista de la compra</button>
+      <div class="hscroll">${(W.alimentos_estrella || []).map((x) => `<div class="star">${foodArt(x.alimento, x.emoji)}<b class="small">${esc(x.alimento)}</b><span class="tiny">${esc(x.beneficio)}</span></div>`).join("")}</div>
+      <button class="btn ghost" id="shop">${icon("bowl", 20)} ${S.ui.shop ? "Ocultar la lista de la compra" : "Ver la lista de la compra"}</button>
+      <p class="tiny" style="text-align:center;margin-top:-6px">Opcional, para organizarte. No cuenta para tu racha.</p>
       ${S.ui.shop ? `<div class="card stack" style="gap:14px">${(W.lista_compra || []).map((gr) => `<div class="stack" style="gap:6px"><span class="eyebrow">${esc(gr.grupo)}</span>${(gr.items || []).map((it, n) => { const id = `${W.week}|${gr.grupo}|${n}`; const done = shopDone().has(id); return `<label class="check shop-item ${done ? "done" : ""}"><input type="checkbox" data-shop="${esc(id)}" ${done ? "checked" : ""}><span>${esc(it)}</span></label>`; }).join("")}</div>`).join("")}</div>` : ""}`}
       <h2 style="margin-top:6px">Mejor reducir</h2>
       <div class="chips">${(A.reducir || []).map((x) => `<span class="chip-soft" title="${esc(x.porque)}">${esc(x.alimento)}</span>`).join("")}</div>`;
@@ -910,9 +956,9 @@ SCREENS.plan = () => {
   } else {
     const W = semanaOk() ? P.semana : null; const hoyH = W?.dias?.[todayIdx()]?.habito;
     const hab = (P.habitos || []).map(habitObj);
-    body = `${hoyH ? `<div class="card big tint-ink stack" style="gap:8px"><span class="eyebrow" style="color:#CFC6BE">Hábito de hoy</span><div class="row" style="gap:14px"><div class="hab-ico dark">${icon(HAB[hoyH.icono] || "check", 26)}</div><div><b style="font-size:18px">${esc(hoyH.titulo)}</b><p class="small">${esc(hoyH.detalle || "")}</p></div></div></div>` : ""}
+    body = `${hoyH ? `<div class="card big tint-ink stack" style="gap:8px"><span class="eyebrow" style="color:#CFC6BE">Hábito de hoy</span><div class="row" style="gap:14px">${habitArt(hoyH, "dark")}<div><b style="font-size:18px">${esc(hoyH.titulo)}</b><p class="small">${esc(hoyH.detalle || "")}</p></div></div></div>` : ""}
       <h2>Tus hábitos</h2>
-      <div class="hab-grid">${hab.map((h, i) => `<div class="hab ${["t1", "t2", "t3"][i % 3]}"><div class="hab-ico">${icon(HAB[h.icono] || "check", 24)}</div><b>${esc(h.titulo)}</b>${h.detalle ? `<span class="tiny">${esc(h.detalle)}</span>` : ""}${h.porque ? `<span class="why">${icon("leaf", 12, 2)} ${esc(h.porque)}</span>` : ""}</div>`).join("")}</div>`;
+      <div class="hab-grid">${hab.map((h, i) => `<div class="hab ${["t1", "t2", "t3"][i % 3]}">${habitArt(h)}<b>${esc(h.titulo)}</b>${h.detalle ? `<span class="tiny">${esc(h.detalle)}</span>` : ""}${h.porque ? `<span class="why">${icon("leaf", 12, 2)} ${esc(h.porque)}</span>` : ""}</div>`).join("")}</div>`;
     if (!W && !S.ui.semanaError) loadSemana();
   }
   $app.innerHTML = `${topbar()}<div class="page">

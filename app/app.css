@@ -289,3 +289,20 @@ h1 .dim,h2 .dim{font-style:italic;font-weight:400;color:#7A706A}
 .hab.t2 .hab-ico{background:var(--rose);color:var(--rose-ink)}
 .hab.t3 .hab-ico{background:var(--stone);color:var(--stone-ink)}
 .hab-ico.dark{background:rgba(255,255,255,.12);color:#F6F1EC;flex-shrink:0}
+
+/* Ilustraciones con emojis (comida y hábitos) */
+.food-art{position:relative;width:60px;height:60px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 45% 30%,#fff 0%,#F6EEE8 55%,#EADFD6 100%);box-shadow:inset 0 -3px 8px rgba(120,90,70,.08),0 6px 14px rgba(90,64,52,.08)}
+.food-art .fe{position:absolute;line-height:1;filter:drop-shadow(0 3px 3px rgba(60,40,30,.16))}
+.food-art.n1 .e0{font-size:30px;left:50%;top:50%;transform:translate(-50%,-50%)}
+.food-art.n2 .e0{font-size:26px;left:9px;top:10px}
+.food-art.n2 .e1{font-size:22px;right:8px;bottom:8px}
+.food-art.n3 .e0{font-size:24px;left:6px;top:9px}
+.food-art.n3 .e1{font-size:20px;right:7px;top:7px}
+.food-art.n3 .e2{font-size:20px;left:50%;bottom:5px;transform:translateX(-35%)}
+.food-art.dark{background:radial-gradient(circle at 45% 30%,rgba(255,255,255,.28),rgba(255,255,255,.08));box-shadow:none}
+.star .food-art{width:64px;height:64px}
+.hab .food-art{width:58px;height:58px;margin-bottom:2px}
+.hab.t1 .food-art{background:radial-gradient(circle at 45% 30%,#fff,#ECE7F5 60%,#DCD3EE)}
+.hab.t2 .food-art{background:radial-gradient(circle at 45% 30%,#fff,#F6E6E4 60%,#ECCFCB)}
+.hab.t3 .food-art{background:radial-gradient(circle at 45% 30%,#fff,#F3EEE8 60%,#E3D9CF)}
+.hab b{overflow-wrap:break-word}
