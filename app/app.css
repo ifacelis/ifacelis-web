@@ -314,3 +314,4 @@ h1 .dim,h2 .dim{font-style:italic;font-weight:400;color:#7A706A}
 .prod-art.photo.fail img{display:none}
 .prod-art.photo.fail .fb{display:flex}
 .prod-art.photo:not(.sm){width:76px;height:76px}
+.prod-art.photo.zoom img{transform:scale(1.45)}

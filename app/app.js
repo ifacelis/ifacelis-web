@@ -832,7 +832,7 @@ SCREENS.hoy = () => {
 function prodPic(p, tipo, size, cls = "") {
   const src = p?.id && S.imgs?.[p.id];
   if (!src) return `<div class="prod-art ${cls}">${productArt(tipo, size)}</div>`;
-  return `<div class="prod-art photo ${cls}"><img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fail')"><span class="fb">${productArt(tipo, size)}</span></div>`;
+  return `<div class="prod-art photo ${cls} ${/primor\.eu|arenal\.com/.test(src) ? "zoom" : ""}"><img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fail')"><span class="fb">${productArt(tipo, size)}</span></div>`;
 }
 function productArt(tipo = "", size = 64) {
   const t = tipo.toLowerCase();
