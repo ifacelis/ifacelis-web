@@ -173,6 +173,8 @@ async function verifyAndClaim(email, code) {
 // Arranque
 // ---------------------------------------------------------------------
 async function boot() {
+  // Fotos de los productos (id → url); si no carga, usamos los dibujos
+  S.imgs = {}; fetch("/app/productos-img.json").then((r) => r.ok ? r.json() : {}).then((m) => { S.imgs = m || {}; if (/plan/.test(location.hash)) render(); }).catch(() => {});
   if (DEMO) { const m = await import("./demo.js"); D = m.makeDemo(S, D); }
   const session = await D.session();
   S.user = session?.user || null;
@@ -827,6 +829,11 @@ SCREENS.hoy = () => {
 };
 
 // ---------- Ilustraciones ----------
+function prodPic(p, tipo, size, cls = "") {
+  const src = p?.id && S.imgs?.[p.id];
+  if (!src) return `<div class="prod-art ${cls}">${productArt(tipo, size)}</div>`;
+  return `<div class="prod-art photo ${cls}"><img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fail')"><span class="fb">${productArt(tipo, size)}</span></div>`;
+}
 function productArt(tipo = "", size = 64) {
   const t = tipo.toLowerCase();
   const [c1, c2] = /sérum|serum|ampolla/.test(t) ? ["#E1DCEC", "#B9AEDA"] : /solar/.test(t) ? ["#F6E2CF", "#E7B98F"] : /limpi|desmaq|tónico|tonico/.test(t) ? ["#E8E2DA", "#CBBFB3"] : /contorno|localizado|exfol/.test(t) ? ["#EBD5D1", "#D7A8A0"] : ["#F1E7DF", "#D9C5B6"];
@@ -906,7 +913,7 @@ SCREENS.plan = () => {
     const p = s.producto;
     const key = `${list}:${idx}`; const open = S.ui.swap?.key === key;
     return `<div class="card stack" style="gap:12px">
-      <div class="row" style="align-items:flex-start;gap:14px"><div class="prod-art">${productArt(p?.tipo || s.tipo, 60)}</div>
+      <div class="row" style="align-items:flex-start;gap:14px">${prodPic(p, p?.tipo || s.tipo, 60)}
       <div class="stack" style="gap:3px;flex:1"><span class="eyebrow">Paso ${esc(s.paso)} · ${esc(s.tipo)}</span>
       ${p ? `<h3>${esc(p.marca)} · ${esc(p.nombre)}</h3>${p.desc ? `<p class="tiny" style="color:var(--muted)">${esc(p.desc)}</p>` : ""}` : `<h3>${esc(s.tipo)}</h3><p class="small">Busca un producto de este tipo que no lleve nada de tus alergias.</p>`}
       ${s.activo ? `<span class="pill-mini">${esc(s.activo)}</span>` : ""}</div></div>
@@ -926,7 +933,7 @@ SCREENS.plan = () => {
     const g = sw.gama || "low"; const opts = sw.options[g] || [];
     return `<div class="swap stack" style="gap:10px">
       <div class="seg">${Object.entries(BUDGETS).map(([k, b]) => `<button class="${g === k ? "on" : ""}" data-sg="${k}">${b.sym} ${{ low: "Económico", equilibrado: "Medio", premium: "Premium" }[k]}</button>`).join("")}</div>
-      ${opts.length ? opts.map((o) => `<button class="swap-opt" data-pick="${esc(o.id)}"><div class="prod-art sm">${productArt(o.tipo, 44)}</div><div style="flex:1;text-align:left"><b class="small">${esc(o.marca)} · ${esc(o.nombre)}</b><p class="tiny">${esc(o.desc || "")}</p></div><b class="small">${o.precio != null ? `${esc(String(o.precio).replace(".", ","))} €` : ""}</b></button>`).join("") : `<p class="tiny">No hay alternativas en esta gama que encajen con tu piel y tus alergias.</p>`}
+      ${opts.length ? opts.map((o) => `<button class="swap-opt" data-pick="${esc(o.id)}">${prodPic(o, o.tipo, 44, "sm")}<div style="flex:1;text-align:left"><b class="small">${esc(o.marca)} · ${esc(o.nombre)}</b><p class="tiny">${esc(o.desc || "")}</p></div><b class="small">${o.precio != null ? `${esc(String(o.precio).replace(".", ","))} €` : ""}</b></button>`).join("") : `<p class="tiny">No hay alternativas en esta gama que encajen con tu piel y tus alergias.</p>`}
     </div>`;
   };
   let body = "";

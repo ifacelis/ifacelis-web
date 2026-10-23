@@ -306,3 +306,11 @@ h1 .dim,h2 .dim{font-style:italic;font-weight:400;color:#7A706A}
 .hab.t2 .food-art{background:radial-gradient(circle at 45% 30%,#fff,#F6E6E4 60%,#ECCFCB)}
 .hab.t3 .food-art{background:radial-gradient(circle at 45% 30%,#fff,#F3EEE8 60%,#E3D9CF)}
 .hab b{overflow-wrap:break-word}
+
+/* Fotos de producto: fondo blanco con sombra suave */
+.prod-art.photo{background:#fff;border:1px solid rgba(221,211,201,.6);box-shadow:0 10px 22px rgba(90,64,52,.10),0 2px 6px rgba(90,64,52,.06);position:relative;overflow:hidden;padding:6px}
+.prod-art.photo img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.prod-art.photo .fb{display:none}
+.prod-art.photo.fail img{display:none}
+.prod-art.photo.fail .fb{display:flex}
+.prod-art.photo:not(.sm){width:76px;height:76px}
