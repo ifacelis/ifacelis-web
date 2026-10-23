@@ -774,7 +774,9 @@ const TASK_STYLE = { piel: ["tint-lilac", "#4F4578", "sun"], agua: ["tint-stone"
 function taskStyle(t) {
   if (t.id === "rutina_noche") return ["tint-lilac", "#4F4578", "moon"];
   if (t.id === "sueno") return TASK_STYLE.sueno;
-  return TASK_STYLE[t.tipo] || TASK_STYLE[t.id] || ["tint-stone", "#4A403B", "check"];
+  if (t.id === "comida") return TASK_STYLE.dieta;
+  if (t.id === "movimiento") return TASK_STYLE.deporte;
+  return TASK_STYLE[t.tipo] || TASK_STYLE[t.id] || ["tint-stone", "#4A403B", null];
 }
 
 SCREENS.hoy = () => {
@@ -797,7 +799,7 @@ SCREENS.hoy = () => {
     <div class="stack">${tasks.map((t) => {
       const [tint, col, ic] = taskStyle(t); const done = log.done.includes(t.id);
       if (t.id === "agua" || t.tipo === "agua") return `<div class="task ${tint} ${done ? "done" : ""}" style="color:${col};cursor:default"><button class="dot" data-t="${esc(t.id)}" style="color:${col};background:${done ? col : "transparent"};border-color:${col}" aria-label="Marcar">${done ? icon("check", 14, 3) : ""}</button><div style="flex:1"><div class="t-title">${esc(t.titulo)}</div><div class="t-detail">${waterN} de ${vasos} vasos</div><div class="glasses">${Array.from({ length: vasos }, (_, i) => `<button class="glass ${i < waterN ? "on" : ""}" data-g="${i + 1}" aria-label="Vaso ${i + 1}"></button>`).join("")}</div></div></div>`;
-      return `<button class="task ${tint} ${done ? "done" : ""}" data-t="${esc(t.id)}" style="color:${col}"><span class="dot" style="background:${done ? col : "transparent"}">${done ? icon("check", 14, 3) : ""}</span><div style="flex:1"><div class="t-title">${esc(t.titulo)}</div><div class="t-detail">${esc(t.detalle || "")}</div></div><span style="opacity:.7">${icon(ic, 22)}</span></button>`;
+      return `<button class="task ${tint} ${done ? "done" : ""}" data-t="${esc(t.id)}" style="color:${col}"><span class="dot" style="background:${done ? col : "transparent"}">${done ? icon("check", 14, 3) : ""}</span><div style="flex:1"><div class="t-title">${esc(t.titulo)}</div><div class="t-detail">${esc(t.detalle || "")}</div></div>${ic ? `<span style="opacity:.7">${icon(ic, 22)}</span>` : ""}</button>`;
     }).join("")}</div>
     ${!due && nxt ? `<p class="tiny" style="text-align:center">Próxima revisión: ${fmtDate(nxt)}</p>` : ""}
   </div>${fab()}${nav("hoy")}`;
