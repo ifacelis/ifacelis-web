@@ -358,8 +358,8 @@ const Q_STEPS = [
   { id: "sexo", t: "¿Cuál es tu sexo?", s: "Las hormonas cambian cómo se comporta la piel.", type: "one", opts: [["mujer", "Mujer"], ["hombre", "Hombre"], ["otro", "Prefiero no decirlo"]] },
   { id: "edad", t: "¿Cuántos años tienes?", s: "Adaptamos los activos a tu edad.", type: "number" },
   { id: "objetivos", t: "¿Qué te gustaría mejorar?", s: "Elige todo lo que quieras. Analizaremos igualmente toda tu piel.", type: "many", opts: [["acne", "Acné y granitos"], ["arrugas", "Arrugas y líneas"], ["rojez", "Rojez o rosácea"], ["manchas", "Manchas"], ["poros", "Poros"], ["ojeras", "Ojeras"], ["hidratacion", "Hidratación"], ["cicatrices", "Cicatrices o marcas"], ["luminosidad", "Luminosidad"]] },
-  { id: "alergias", t: "¿Tienes alguna alergia o intolerancia?", s: "Nunca te recomendaremos nada que la contenga.", type: "many", none: "ninguna", other: true, opts: [["ninguna", "Ninguna"], ["perfumes", "Perfumes o fragancias"], ["frutos secos", "Frutos secos"], ["marisco", "Marisco o pescado"], ["lactosa", "Lactosa"], ["gluten", "Gluten"], ["huevo", "Huevo"]] },
-  { id: "embarazo", t: "¿Estás embarazada o en lactancia?", s: "Algunos activos no se recomiendan en estas etapas.", type: "one", when: (q) => q.sexo !== "hombre", opts: [["no", "No"], ["embarazo", "Embarazada"], ["lactancia", "En lactancia"]] },
+  { id: "alergias", t: "¿Tienes alguna alergia o intolerancia?", s: "Nunca te recomendaremos nada que la contenga.", type: "many", none: "ninguna", other: true, opts: [["ninguna", "No tengo ninguna · tolero todo"], ["perfumes", "Perfumes o fragancias"], ["frutos secos", "Frutos secos"], ["marisco", "Marisco o pescado"], ["lactosa", "Lactosa"], ["gluten", "Gluten"], ["huevo", "Huevo"]] },
+  { id: "embarazo", t: "¿Estás embarazada o dando el pecho?", s: "Algunos ingredientes no se recomiendan en estas etapas.", type: "one", when: (q) => q.sexo !== "hombre", opts: [["no", "No"], ["embarazo", "Estoy embarazada"], ["lactancia", "Estoy dando el pecho", "Lactancia: si alimentas a tu bebé con tu leche"]] },
   { id: "actividad", t: "¿Cuánto te mueves al día?", s: "Lo usamos para el agua y los hábitos.", type: "one", opts: [["poca", "Poco", "Trabajo sentado, poco deporte"], ["media", "Normal", "Camino o hago deporte a veces"], ["mucha", "Mucho", "Deporte casi cada día"]] },
   { id: "presupuesto", t: "¿Cuánto quieres gastar en productos?", s: "Puedes cambiarlo cuando quieras desde tu plan.", type: "one", opts: Object.entries(BUDGETS).map(([k, b]) => [k, `${b.sym} ${b.t}`, b.s]) },
 ];
@@ -777,7 +777,9 @@ function taskStyle(t) {
 
 SCREENS.hoy = () => {
   const plan = S.plan?.plan || {};
-  const tasks = plan.tareas_diarias || [];
+  const W = semanaOk() ? plan.semana : null; const todayMenu = W?.dias?.[todayIdx()];
+  if (!W && S.plan && !S.ui.semanaError) setTimeout(loadSemana, 300);
+  const tasks = (plan.tareas_diarias || []).map((t) => t.id === "comida" && todayMenu?.comida ? { ...t, detalle: `${todayMenu.comida.emoji || ""} ${todayMenu.comida.plato}`.trim() } : t);
   const day = today(); const log = logFor(day);
   const vasos = Number(plan.agua?.vasos) || 8;
   const waterN = Number((log.done.find((x) => x.startsWith("agua:")) || "agua:0").split(":")[1]);
@@ -820,44 +822,121 @@ SCREENS.hoy = () => {
   });
 };
 
+// ---------- Ilustraciones ----------
+function productArt(tipo = "", size = 64) {
+  const t = tipo.toLowerCase();
+  const [c1, c2] = /sérum|serum|ampolla/.test(t) ? ["#E1DCEC", "#B9AEDA"] : /solar/.test(t) ? ["#F6E2CF", "#E7B98F"] : /limpi|desmaq|tónico|tonico/.test(t) ? ["#E8E2DA", "#CBBFB3"] : /contorno|localizado|exfol/.test(t) ? ["#EBD5D1", "#D7A8A0"] : ["#F1E7DF", "#D9C5B6"];
+  const g = `g${Math.random().toString(36).slice(2, 7)}`;
+  const grad = `<defs><linearGradient id="${g}" x1="0" x2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>`;
+  let body;
+  if (/sérum|serum|ampolla/.test(t)) body = `<rect x="24" y="30" width="32" height="40" rx="6" fill="url(#${g})"/><rect x="31" y="18" width="18" height="13" rx="3" fill="#2B2725"/><rect x="36" y="8" width="8" height="12" rx="4" fill="#4A403B"/><rect x="29" y="44" width="22" height="12" rx="2" fill="#fff" opacity=".7"/>`;
+  else if (/solar|contorno|localizado|exfol/.test(t)) body = `<path d="M26 12 h28 l-3 50 h-22 z" fill="url(#${g})"/><rect x="30" y="62" width="20" height="10" rx="2" fill="#2B2725"/><rect x="31" y="26" width="18" height="16" rx="2" fill="#fff" opacity=".7"/>`;
+  else if (/limpi|desmaq|tónico|tonico/.test(t)) body = `<rect x="24" y="28" width="32" height="44" rx="8" fill="url(#${g})"/><rect x="34" y="16" width="12" height="13" rx="2" fill="#2B2725"/><path d="M40 16 v-6 h12" stroke="#2B2725" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="29" y="42" width="22" height="14" rx="2" fill="#fff" opacity=".7"/>`;
+  else body = `<rect x="16" y="34" width="48" height="32" rx="10" fill="url(#${g})"/><rect x="18" y="24" width="44" height="12" rx="5" fill="#2B2725"/><rect x="26" y="44" width="28" height="12" rx="2" fill="#fff" opacity=".7"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 80 80" aria-hidden="true">${grad}<ellipse cx="40" cy="74" rx="22" ry="3" fill="#2B2725" opacity=".08"/>${body}</svg>`;
+}
+const HAB = { sueno: "moon", sol: "sun", agua: "drop", deporte: "run", estres: "leaf", piel: "scan", almohada: "bed", manos: "brush", movil: "chat" };
+const habitObj = (h) => typeof h === "string" ? { icono: "piel", titulo: h.split(/[:.]/)[0].slice(0, 40), detalle: h.includes(":") || h.includes(".") ? h.split(/[:.]/).slice(1).join(".").trim() : "" } : h;
+const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const todayIdx = () => (new Date().getDay() + 6) % 7;
+async function loadSemana() {
+  if (S.ui.semanaLoading) return; S.ui.semanaLoading = true;
+  try { const { semana } = await D.api("/api/semana"); S.plan.plan.semana = semana; }
+  catch (e) { S.ui.semanaError = e.message; }
+  S.ui.semanaLoading = false;
+  if (/plan|hoy/.test(location.hash) || location.hash === "") render();
+}
+const mondayKey = () => { const x = new Date(); x.setDate(x.getDate() - todayIdx()); return x.toLocaleDateString("sv"); };
+const semanaOk = () => S.plan?.plan?.semana?.week === mondayKey();
+
+function shopDone() { if (!S.ui.shopSet) { try { S.ui.shopSet = new Set(JSON.parse(localStorage.getItem("ifc_shop") || "[]")); } catch { S.ui.shopSet = new Set(); } } return S.ui.shopSet; }
+
 // ---------- Plan ----------
 SCREENS.plan = () => {
   const P = S.plan?.plan || {}; const tab = S.ui.planTab || "rutina";
   const budget = S.profile?.budget || "equilibrado";
-  const stepCard = (s) => {
+  const stepCard = (s, idx, list) => {
     const p = s.producto;
+    const key = `${list}:${idx}`; const open = S.ui.swap?.key === key;
     return `<div class="card stack" style="gap:12px">
-      <div class="step"><span class="n">${esc(s.paso)}</span><div class="stack" style="gap:2px;flex:1"><span class="eyebrow">${esc(s.tipo)}${s.activo ? ` · ${esc(s.activo)}` : ""}</span>
-      ${p ? `<h3>${esc(p.marca)} · ${esc(p.nombre)}</h3>` : `<h3>${esc(s.tipo)}</h3><p class="small">Busca un producto de este tipo que no lleve nada de tus alergias.</p>`}</div></div>
+      <div class="row" style="align-items:flex-start;gap:14px"><div class="prod-art">${productArt(p?.tipo || s.tipo, 60)}</div>
+      <div class="stack" style="gap:3px;flex:1"><span class="eyebrow">Paso ${esc(s.paso)} · ${esc(s.tipo)}</span>
+      ${p ? `<h3>${esc(p.marca)} · ${esc(p.nombre)}</h3>${p.desc ? `<p class="tiny" style="color:var(--muted)">${esc(p.desc)}</p>` : ""}` : `<h3>${esc(s.tipo)}</h3><p class="small">Busca un producto de este tipo que no lleve nada de tus alergias.</p>`}
+      ${s.activo ? `<span class="pill-mini">${esc(s.activo)}</span>` : ""}</div></div>
       <div class="stack" style="gap:6px">
         <div class="kv"><b>Cantidad</b><span>${esc(s.cantidad || p?.cantidad || "")}</span></div>
         ${s.como_aplicar ? `<div class="kv"><b>Cómo</b><span>${esc(s.como_aplicar)}</span></div>` : ""}
         ${s.frecuencia ? `<div class="kv"><b>Cuándo</b><span>${esc(s.frecuencia)}</span></div>` : ""}
       </div>
       ${p ? `<div class="between"><span class="small"><b>${p.precio != null ? `≈ ${esc(String(p.precio).replace(".", ","))} €` : ""}</b> <span class="dim">${esc(p.donde || "")}</span></span>${p.enlace ? `<a class="btn ghost small" href="${esc(p.enlace)}" target="_blank" rel="noopener nofollow">Ver ${icon("link", 16, 2)}</a>` : ""}</div>` : ""}
+      <button class="link-btn small" data-swap="${key}" style="align-self:flex-start">${open ? "Cerrar" : "Cambiar producto"}</button>
+      ${open ? swapPanel() : ""}
+    </div>`;
+  };
+  const swapPanel = () => {
+    const sw = S.ui.swap;
+    if (!sw.options) return `<div class="row small" style="gap:10px"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div>Buscando alternativas…</div>`;
+    const g = sw.gama || "low"; const opts = sw.options[g] || [];
+    return `<div class="swap stack" style="gap:10px">
+      <div class="seg">${Object.entries(BUDGETS).map(([k, b]) => `<button class="${g === k ? "on" : ""}" data-sg="${k}">${b.sym} ${{ low: "Económico", equilibrado: "Medio", premium: "Premium" }[k]}</button>`).join("")}</div>
+      ${opts.length ? opts.map((o) => `<button class="swap-opt" data-pick="${esc(o.id)}"><div class="prod-art sm">${productArt(o.tipo, 44)}</div><div style="flex:1;text-align:left"><b class="small">${esc(o.marca)} · ${esc(o.nombre)}</b><p class="tiny">${esc(o.desc || "")}</p></div><b class="small">${o.precio != null ? `${esc(String(o.precio).replace(".", ","))} €` : ""}</b></button>`).join("") : `<p class="tiny">No hay alternativas en esta gama que encajen con tu piel y tus alergias.</p>`}
     </div>`;
   };
   let body = "";
   if (tab === "rutina") {
     body = `<div class="stack" style="gap:8px"><span class="eyebrow">Presupuesto</span><div class="chips">${Object.entries(BUDGETS).map(([k, b]) => `<button class="chip ${budget === k ? "on" : ""}" data-b="${k}">${b.sym} ${b.t}</button>`).join("")}</div>${P.nota_presupuesto ? `<p class="tiny">${esc(P.nota_presupuesto)}</p>` : ""}</div>
-      <div class="row" style="gap:8px">${icon("sun", 20)}<h2>Mañana</h2></div>${(P.rutina_manana || []).map(stepCard).join("")}
-      <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div>${(P.rutina_noche || []).map(stepCard).join("")}
+      <div class="row" style="gap:8px">${icon("sun", 20)}<h2>Mañana</h2></div>${(P.rutina_manana || []).map((s, i) => stepCard(s, i, "rutina_manana")).join("")}
+      <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div>${(P.rutina_noche || []).map((s, i) => stepCard(s, i, "rutina_noche")).join("")}
       <p class="tiny">Precios aproximados. Antes de usar un producto nuevo, pruébalo 24 h en una zona pequeña.</p>`;
   } else if (tab === "comida") {
-    const A = P.alimentacion || {}; const m = A.menu_ejemplo || {};
-    body = `<div class="card big tint-lilac row">${icon("drop", 28)}<div><h3>${esc(P.agua?.litros)} L de agua al día</h3><p class="small">${esc(P.agua?.vasos)} vasos de 250 ml. ${esc(P.agua?.nota || "")}</p></div></div>
-      <h2>Menú de ejemplo</h2>
-      ${[["desayuno", "Desayuno", "tint-stone", "sun"], ["comida", "Comida", "tint-rose", "bowl"], ["cena", "Cena", "tint-lilac", "moon"]].map(([k, t, c, i]) => m[k] ? `<div class="card ${c} row">${icon(i, 24)}<div><span class="eyebrow">${t}</span><h3>${esc(m[k])}</h3></div></div>` : "").join("")}
-      <div class="grid2"><div class="card stack" style="gap:8px"><span class="eyebrow" style="color:var(--lilac-ink)">Más de esto</span>${(A.potenciar || []).map((x) => `<div><b class="small">${esc(x.alimento)}</b><p class="tiny">${esc(x.porque)}</p></div>`).join("")}</div>
-      <div class="card stack" style="gap:8px"><span class="eyebrow" style="color:var(--rose-ink)">Reduce</span>${(A.reducir || []).map((x) => `<div><b class="small">${esc(x.alimento)}</b><p class="tiny">${esc(x.porque)}</p></div>`).join("")}</div></div>`;
+    const A = P.alimentacion || {}; const W = semanaOk() ? P.semana : null;
+    const sel = S.ui.dia ?? todayIdx(); const d = W?.dias?.[sel];
+    const vasos = Number(P.agua?.vasos) || 8;
+    const meal = (k, t, m) => m ? `<div class="meal"><div class="meal-emoji">${esc(m.emoji || "🍽️")}</div><div style="flex:1"><span class="eyebrow">${t}</span><b>${esc(m.plato)}</b>${m.por_que ? `<span class="why">${icon("leaf", 13, 2)} ${esc(m.por_que)}</span>` : ""}</div></div>` : "";
+    body = `<div class="water card"><div class="between"><div><span class="eyebrow">Agua</span><div class="h2">${esc(P.agua?.litros || 2)} L <span class="dim small">al día</span></div></div>${icon("drop", 30)}</div>
+        <div class="glass-row">${Array.from({ length: vasos }, () => `<span class="g"></span>`).join("")}</div><p class="tiny">${vasos} vasos · ${esc(P.agua?.nota || "repártelos a lo largo del día")}</p></div>
+      ${!W ? (S.ui.semanaError ? `<div class="notice warn">${esc(S.ui.semanaError)} <button class="link-btn" id="retrySem">Reintentar</button></div>` : `<div class="card row" style="gap:12px"><div class="spinner" style="width:22px;height:22px;border-width:2px"></div><p class="small">Lis está preparando tu menú de esta semana…</p></div>`) : `
+      <div class="between"><h2>Tu semana</h2><span class="tiny">Menú nuevo cada lunes</span></div>
+      <div class="week">${DIAS.map((n, k) => `<button class="${k === sel ? "on" : ""} ${k === todayIdx() ? "today" : ""}" data-dia="${k}"><span>${n.slice(0, 1)}</span><i></i></button>`).join("")}</div>
+      <div class="stack" style="gap:10px"><div class="eyebrow">${esc(DIAS[sel])}${sel === todayIdx() ? " · hoy" : ""}</div>
+        ${meal("desayuno", "Desayuno", d?.desayuno)}${meal("comida", "Comida", d?.comida)}${meal("snack", "Merienda", d?.snack)}${meal("cena", "Cena", d?.cena)}</div>
+      <h2 style="margin-top:6px">Estrellas de la semana</h2>
+      <div class="hscroll">${(W.alimentos_estrella || []).map((x) => `<div class="star"><div class="meal-emoji">${esc(x.emoji || "✨")}</div><b class="small">${esc(x.alimento)}</b><span class="tiny">${esc(x.beneficio)}</span></div>`).join("")}</div>
+      <button class="btn ghost" id="shop">${icon("bowl", 20)} Lista de la compra</button>
+      ${S.ui.shop ? `<div class="card stack" style="gap:14px">${(W.lista_compra || []).map((gr) => `<div class="stack" style="gap:6px"><span class="eyebrow">${esc(gr.grupo)}</span>${(gr.items || []).map((it, n) => { const id = `${W.week}|${gr.grupo}|${n}`; const done = shopDone().has(id); return `<label class="check shop-item ${done ? "done" : ""}"><input type="checkbox" data-shop="${esc(id)}" ${done ? "checked" : ""}><span>${esc(it)}</span></label>`; }).join("")}</div>`).join("")}</div>` : ""}`}
+      <h2 style="margin-top:6px">Mejor reducir</h2>
+      <div class="chips">${(A.reducir || []).map((x) => `<span class="chip-soft" title="${esc(x.porque)}">${esc(x.alimento)}</span>`).join("")}</div>`;
+    if (!W && !S.ui.semanaError) loadSemana();
   } else {
-    body = `<div class="stack">${(P.habitos || []).map((h, i) => `<div class="card row ${["tint-stone", "tint-rose", "tint-lilac"][i % 3]}">${icon("check", 20, 2.2)}<p style="color:var(--ink);font-weight:600">${esc(h)}</p></div>`).join("")}</div>`;
+    const W = semanaOk() ? P.semana : null; const hoyH = W?.dias?.[todayIdx()]?.habito;
+    const hab = (P.habitos || []).map(habitObj);
+    body = `${hoyH ? `<div class="card big tint-ink stack" style="gap:8px"><span class="eyebrow" style="color:#CFC6BE">Hábito de hoy</span><div class="row" style="gap:14px"><div class="hab-ico dark">${icon(HAB[hoyH.icono] || "check", 26)}</div><div><b style="font-size:18px">${esc(hoyH.titulo)}</b><p class="small">${esc(hoyH.detalle || "")}</p></div></div></div>` : ""}
+      <h2>Tus hábitos</h2>
+      <div class="hab-grid">${hab.map((h, i) => `<div class="hab ${["t1", "t2", "t3"][i % 3]}"><div class="hab-ico">${icon(HAB[h.icono] || "check", 24)}</div><b>${esc(h.titulo)}</b>${h.detalle ? `<span class="tiny">${esc(h.detalle)}</span>` : ""}${h.porque ? `<span class="why">${icon("leaf", 12, 2)} ${esc(h.porque)}</span>` : ""}</div>`).join("")}</div>`;
+    if (!W && !S.ui.semanaError) loadSemana();
   }
   $app.innerHTML = `${topbar()}<div class="page">
     <div class="stack" style="gap:4px"><div class="eyebrow">Fase ${esc(P.fase || S.account.phase)} · ${esc(P.fase_nombre || PHASES[(S.account.phase || 1) - 1].t)}</div><h1>Tu <span class="dim">plan</span></h1><p class="small">${esc(P.objetivo_fase || "")}</p></div>
     <div class="seg">${[["rutina", "Rutina"], ["comida", "Alimentación"], ["habitos", "Hábitos"]].map(([k, t]) => `<button class="${tab === k ? "on" : ""}" data-tab="${k}">${t}</button>`).join("")}</div>
     ${body}${legal}</div>${fab()}${nav("plan")}`;
   $app.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { S.ui.planTab = b.dataset.tab; render(); });
+  $app.querySelectorAll("[data-dia]").forEach((b) => b.onclick = () => { S.ui.dia = Number(b.dataset.dia); render(); });
+  const shop = document.getElementById("shop"); if (shop) shop.onclick = () => { S.ui.shop = !S.ui.shop; render(); };
+  const rs = document.getElementById("retrySem"); if (rs) rs.onclick = () => { S.ui.semanaError = null; render(); };
+  $app.querySelectorAll("[data-shop]").forEach((c) => c.onchange = () => { const set = shopDone(); c.checked ? set.add(c.dataset.shop) : set.delete(c.dataset.shop); try { localStorage.setItem("ifc_shop", JSON.stringify([...set])); } catch {} c.closest("label").classList.toggle("done", c.checked); });
+  $app.querySelectorAll("[data-swap]").forEach((b) => b.onclick = async () => {
+    const key = b.dataset.swap; if (S.ui.swap?.key === key) { S.ui.swap = null; return render(); }
+    const [list, idx] = key.split(":"); const cur = S.plan.plan[list][Number(idx)]?.producto;
+    S.ui.swap = { key, gama: cur?.gama || budget, options: null }; render();
+    try { const r = await D.api("/api/product", { action: "list", list, index: Number(idx) }); if (S.ui.swap?.key === key) { S.ui.swap.options = r.options; render(); } }
+    catch (e) { toast(e.message); S.ui.swap = null; render(); }
+  });
+  $app.querySelectorAll("[data-sg]").forEach((b) => b.onclick = () => { S.ui.swap.gama = b.dataset.sg; render(); });
+  $app.querySelectorAll("[data-pick]").forEach((b) => b.onclick = async () => {
+    const [list, idx] = S.ui.swap.key.split(":"); b.disabled = true;
+    try { const r = await D.api("/api/product", { action: "swap", list, index: Number(idx), product_id: b.dataset.pick }); S.plan = r.plan; S.ui.swap = null; toast("Producto cambiado"); render(); }
+    catch (e) { toast(e.message); b.disabled = false; }
+  });
   $app.querySelectorAll("[data-b]").forEach((b) => b.onclick = async () => {
     if (b.dataset.b === budget) return;
     if (!confirm(`¿Cambiar a ${BUDGETS[b.dataset.b].t}? Rehacemos tu rutina con los mismos pasos y productos de esa gama.`)) return;
