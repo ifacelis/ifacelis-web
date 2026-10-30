@@ -941,7 +941,7 @@ SCREENS.plan = () => {
   };
   let body = "";
   if (tab === "rutina") {
-    body = `<div class="stack" style="gap:8px"><span class="eyebrow">Presupuesto</span><div class="chips">${Object.entries(BUDGETS).map(([k, b]) => `<button class="chip ${budget === k ? "on" : ""}" data-b="${k}">${b.sym} ${b.t}</button>`).join("")}</div>${P.nota_presupuesto ? `<p class="tiny">${esc(P.nota_presupuesto)}</p>` : ""}</div>
+    body = `<div class="stack" style="gap:8px"><span class="eyebrow">Presupuesto</span><div class="chips">${Object.entries(BUDGETS).map(([k, b]) => `<button class="chip ${budget === k ? "on" : ""}" data-b="${k}">${b.sym} ${b.t}</button>`).join("")}</div>${P.nota_presupuesto ? `<p class="tiny">${esc(P.nota_presupuesto)}</p>` : ""}${S.ui.budgetAsk && BUDGETS[S.ui.budgetAsk] ? `<div class="notice info stack" style="gap:10px"><span>¿Cambiar a <b>${BUDGETS[S.ui.budgetAsk].t}</b>? Rehacemos tu rutina con los mismos pasos y productos de esa gama. Tarda menos de un minuto.</span><div class="row" style="gap:10px"><button class="btn small" id="bok">Sí, rehacer mi rutina</button><button class="link-btn small" id="bno">Cancelar</button></div></div>` : ""}</div>
       <div class="row" style="gap:8px">${icon("sun", 20)}<h2>Mañana</h2></div>${(P.rutina_manana || []).map((s, i) => stepCard(s, i, "rutina_manana")).join("")}
       <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div>${(P.rutina_noche || []).map((s, i) => stepCard(s, i, "rutina_noche")).join("")}
       <p class="tiny">Precios aproximados. Antes de usar un producto nuevo, pruébalo 24 h en una zona pequeña.</p>`;
@@ -995,11 +995,15 @@ SCREENS.plan = () => {
     try { const r = await D.api("/api/product", { action: "swap", list, index: Number(idx), product_id: b.dataset.pick }); S.plan = r.plan; S.ui.swap = null; toast("Producto cambiado"); render(); }
     catch (e) { toast(e.message); b.disabled = false; }
   });
-  $app.querySelectorAll("[data-b]").forEach((b) => b.onclick = async () => {
-    if (b.dataset.b === budget) return;
-    if (!confirm(`¿Cambiar a ${BUDGETS[b.dataset.b].t}? Rehacemos tu rutina con los mismos pasos y productos de esa gama.`)) return;
-    try { await D.saveProfile({ budget: b.dataset.b }); S.ui.planReason = "budget"; go("#/generando"); } catch { toast("No se ha podido cambiar."); }
+  $app.querySelectorAll("[data-b]").forEach((b) => b.onclick = () => {
+    S.ui.budgetAsk = b.dataset.b === budget ? null : b.dataset.b; render();
   });
+  const bno = document.getElementById("bno"); if (bno) bno.onclick = () => { S.ui.budgetAsk = null; render(); };
+  const bok = document.getElementById("bok"); if (bok) bok.onclick = async () => {
+    const nb = S.ui.budgetAsk; bok.disabled = true; bok.textContent = "Guardando…";
+    try { await D.saveProfile({ budget: nb }); S.ui.budgetAsk = null; S.ui.planReason = "budget"; go("#/generando"); }
+    catch { toast("No se ha podido cambiar. Prueba otra vez."); bok.disabled = false; bok.textContent = "Sí, rehacer mi rutina"; }
+  };
 };
 
 // ---------- Progreso ----------
