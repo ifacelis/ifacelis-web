@@ -13,6 +13,11 @@ export const POST = handler(async (request) => {
 
   const s = stripe();
   let customer = account.stripe_customer_id;
+  // Si el cliente guardado no existe en este modo de Stripe (p. ej. era de las pruebas), creamos uno nuevo
+  if (customer) {
+    try { const c = await s.customers.retrieve(customer); if (c.deleted) customer = null; }
+    catch { customer = null; }
+  }
   if (!customer) {
     const c = await s.customers.create({ email: user.email, metadata: { user_id: uid } });
     customer = c.id;
