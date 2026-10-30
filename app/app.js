@@ -489,7 +489,7 @@ function scanFlow(kind) {
       <div class="stack" style="gap:6px"><div class="eyebrow">${weekly ? "Revisión semanal" : "Escaneo facial"}</div><h1>3 fotos, <span class="dim">1 minuto</span></h1></div>
       <p>${weekly ? "Hazlas en el mismo sitio y con la misma luz que la última vez: así la comparación es más fiable." : "Frente y los dos lados, para ver también mejillas, mandíbula y sienes."}</p>
       <div class="stack">
-        ${[["sun", "Luz de día de frente", "Junto a una ventana, sin sol directo ni contraluz."], ["drop", "Cara limpia", "Sin maquillaje ni filtros. Pelo recogido."], ["scan", "Teléfono a la altura de los ojos", "A un brazo de distancia, sin gafas."]].map(([i, t, s], j) =>
+        ${[["sun", "Luz de día de frente", "Junto a una ventana, sin sol directo ni contraluz."], ["drop", "Cara limpia", "Sin maquillaje ni filtros. Pelo recogido."], ["scan", "Teléfono a la altura de los ojos", "Cerca, con la cara llenando el óvalo. Sin gafas."]].map(([i, t, s], j) =>
           `<div class="card row ${["tint-stone", "tint-rose", "tint-lilac"][j]}">${icon(i, 24)}<div><h3>${t}</h3><p class="small">${s}</p></div></div>`).join("")}
       </div>
       <div style="flex:1"></div>
