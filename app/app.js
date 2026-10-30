@@ -1166,3 +1166,23 @@ SCREENS.cuenta = () => {
 };
 
 boot().catch((e) => { console.error(e); $app.innerHTML = errorView(e); });
+
+// Código de 6 cifras: entra solo al completarlo (sirve también al pegarlo o con la sugerencia del teclado)
+(function autoSubmitCode(){
+  document.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!t || t.id !== "code") return;
+    const v = t.value.replace(/\D/g, "").slice(0, 6);
+    if (v !== t.value) t.value = v;
+    const f = t.form;
+    if (v.length === 6 && f && !f.dataset.sending) {
+      f.dataset.sending = "1";
+      setTimeout(() => { delete f.dataset.sending; }, 4000);
+      f.requestSubmit();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    const c = document.getElementById("code");
+    if (document.visibilityState === "visible" && c && !c.value) c.focus();
+  });
+})();
