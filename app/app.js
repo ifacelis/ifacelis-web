@@ -339,7 +339,7 @@ SCREENS.login = () => {
     $app.innerHTML = `<div class="page no-nav" style="justify-content:center;min-height:100dvh">
       <button class="back" id="bk">${icon("back", 18, 2.2)} Cambiar correo</button>
       <h2>Revisa tu correo 💌</h2>
-      <p>Hemos enviado un código a <b>${esc(st.email)}</b>. Pulsa <b>“Entrar en Ifacelis”</b> en el correo, o escribe aquí el código. Si no lo ves en un minuto, mira en spam o promociones.</p>
+      <p>Hemos enviado un código a <b>${esc(st.email)}</b>. Escribe aquí el código de 6 cifras. Si no lo ves en un minuto, mira en spam o promociones.</p>
       <form id="f" class="stack"><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
       <button class="btn" id="b">Entrar</button></form>
       <button class="link-btn small" id="again">Reenviar código</button></div>`;
@@ -352,7 +352,7 @@ SCREENS.login = () => {
       try {
         await verifyAndClaim(st.email, document.getElementById("code").value.replace(/\D/g, ""));
         S.ui.login = null; go("#/hoy");
-      } catch { toast("Código incorrecto o caducado."); b.disabled = false; b.textContent = "Entrar"; }
+      } catch { toast("Ese código no vale o ya se ha usado. Pulsa «Reenviar código»."); b.disabled = false; b.textContent = "Entrar"; }
     };
   }
 };
@@ -643,8 +643,8 @@ SCREENS.suscribirse = () => {
     account = `<form id="ef" class="stack"><div class="field"><label for="em">Tu correo, para guardar tu informe y tu plan</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div><button class="btn" id="eb">Continuar</button></form>
       <p class="tiny" style="text-align:center">Te enviamos un código para confirmarlo. ¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>`;
   } else if (needsEmail && st.step === "code") {
-    account = `<form id="cf" class="stack"><p class="small">Escribe el código que hemos enviado a <b>${esc(st.email)}</b> (mira también en spam).</p><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required><button class="btn" id="cb">Confirmar</button></form>
-      <button class="link-btn small" id="chg">Cambiar correo</button>`;
+    account = `<form id="cf" class="stack"><p class="small">Escribe el código de 6 cifras que hemos enviado a <b>${esc(st.email)}</b>. Si no lo ves, mira en spam o promociones.</p><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required><button class="btn" id="cb">Confirmar</button></form>
+      <div class="between"><button class="link-btn small" id="resend">Enviarme otro código</button><button class="link-btn small" id="chg">Cambiar correo</button></div>`;
   } else {
     account = `<label class="check"><input type="checkbox" id="wd"><span>Quiero empezar ya y acepto las <a href="/terminos.html" target="_blank">condiciones</a>. Entiendo que, al empezar el servicio, pierdo el derecho de desistimiento de 14 días.</span></label>
       <button class="btn" id="pay">Suscribirme y ver mi solución</button><p class="tiny" style="text-align:center">Pago seguro con Stripe · Cancela cuando quieras</p>`;
@@ -672,14 +672,12 @@ SCREENS.suscribirse = () => {
   if (ef) ef.onsubmit = async (e) => {
     e.preventDefault(); const b = document.getElementById("eb"); b.disabled = true;
     st.email = document.getElementById("em").value.trim().toLowerCase();
-    try { await D.addEmail(st.email); st.step = "code"; render(); }
+    // Siempre entramos con código (sirve para correos nuevos y para cuentas que ya existen);
+    // lo que hizo sin cuenta (fotos, análisis) se pasa a su cuenta con /api/claim
+    try { await D.signIn(st.email); st.step = "code"; st.mode = "login"; render(); }
     catch (err) {
       b.disabled = false;
-      if (/already|registered|exists/i.test(err.message)) {
-        try { await D.signIn(st.email); st.step = "code"; st.mode = "login"; render(); toast("Ese correo ya tiene cuenta: te hemos enviado un código para entrar."); }
-        catch { toast("Ese correo ya tiene cuenta. Espera un minuto y vuelve a intentarlo."); }
-      }
-      else if (/rate|limit/i.test(err.message)) toast("Demasiados intentos. Espera unos minutos.");
+      if (/rate|limit|seconds/i.test(err.message)) toast("Espera un minuto antes de pedir otro código.");
       else toast("No se ha podido enviar el código. Revisa el correo.");
     }
   };
@@ -688,13 +686,18 @@ SCREENS.suscribirse = () => {
     e.preventDefault(); const b = document.getElementById("cb"); b.disabled = true;
     const code = document.getElementById("code").value.replace(/\D/g, "");
     try {
-      if (st.mode === "login") await verifyAndClaim(st.email, code);
-      else S.user = await D.verifyEmail(st.email, code);
+      await verifyAndClaim(st.email, code);
       st.step = "pay"; st.mode = null; render();
     }
-    catch { toast("Código incorrecto o caducado."); b.disabled = false; }
+    catch { toast("Ese código no vale o ya se ha usado. Pulsa «Enviarme otro código»."); b.disabled = false; }
   };
   const chg = document.getElementById("chg"); if (chg) chg.onclick = () => { st.step = "email"; render(); };
+  const rs = document.getElementById("resend"); if (rs) rs.onclick = async () => {
+    rs.disabled = true;
+    try { await D.signIn(st.email); toast("Te hemos enviado un código nuevo. Usa el del último correo."); }
+    catch { toast("Espera un minuto antes de pedir otro código."); }
+    setTimeout(() => { rs.disabled = false; }, 30000);
+  };
   const pay = document.getElementById("pay"); if (pay) pay.onclick = checkout;
 };
 
