@@ -912,23 +912,38 @@ function shopDone() { if (!S.ui.shopSet) { try { S.ui.shopSet = new Set(JSON.par
 SCREENS.plan = () => {
   const P = S.plan?.plan || {}; const tab = S.ui.planTab || "rutina";
   const budget = S.profile?.budget || "equilibrado";
-  const stepCard = (s, idx, list) => {
-    const p = s.producto;
-    const key = `${list}:${idx}`; const open = S.ui.swap?.key === key;
-    return `<div class="card stack" style="gap:12px">
-      <div class="row" style="align-items:flex-start;gap:14px">${prodPic(p, p?.tipo || s.tipo, 60)}
-      <div class="stack" style="gap:3px;flex:1"><span class="eyebrow">Paso ${esc(s.paso)} · ${esc(s.tipo)}</span>
-      ${p ? `<h3>${esc(p.marca)} · ${esc(p.nombre)}</h3>${p.desc ? `<p class="tiny" style="color:var(--muted)">${esc(p.desc)}</p>` : ""}` : `<h3>${esc(s.tipo)}</h3><p class="small">Busca un producto de este tipo que no lleve nada de tus alergias.</p>`}
-      ${s.activo ? `<span class="pill-mini">${esc(s.activo)}</span>` : ""}</div></div>
-      <div class="stack" style="gap:6px">
-        <div class="kv"><b>Cantidad</b><span>${esc(s.cantidad || p?.cantidad || "")}</span></div>
-        ${s.como_aplicar ? `<div class="kv"><b>Cómo</b><span>${esc(s.como_aplicar)}</span></div>` : ""}
-        ${s.frecuencia ? `<div class="kv"><b>Cuándo</b><span>${esc(s.frecuencia)}</span></div>` : ""}
+  const price = (p) => (p?.precio != null ? `≈ ${String(p.precio).replace(".", ",")} €` : "");
+  // Fila corta: foto, paso, nombre, cuándo y precio. Al tocarla se abre la ficha del producto.
+  const stepRow = (s, idx, list) => {
+    const p = s.producto; const key = `${list}:${idx}`;
+    const meta = [s.frecuencia, price(p)].filter(Boolean).map(esc).join(" · ");
+    return `<button class="card row" data-open="${key}" style="appearance:none;width:100%;gap:14px;align-items:center;text-align:left;padding:12px 14px;cursor:pointer;font:inherit;color:inherit">
+      ${prodPic(p, p?.tipo || s.tipo, 52)}
+      <span class="stack" style="gap:3px;flex:1;min-width:0"><span class="tiny" style="text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)">Paso ${esc(s.paso)} · ${esc(s.tipo)}</span>
+      <b style="font-size:15px;line-height:1.25">${p ? `${esc(p.marca)} · ${esc(p.nombre)}` : esc(s.tipo)}</b>
+      ${meta ? `<span class="tiny" style="color:var(--muted)">${meta}</span>` : ""}</span>
+      <span aria-hidden="true" style="font-size:24px;line-height:1;color:var(--muted)">›</span></button>`;
+  };
+  // Ficha del producto: toda la info, el enlace y cambiar producto
+  const detail = (key) => {
+    const [list, idx] = key.split(":"); const s = (P[list] || [])[Number(idx)]; if (!s) return null;
+    const p = s.producto; const open = S.ui.swap?.key === key;
+    const kv = (k, v) => (v ? `<div class="kv"><b>${k}</b><span>${esc(v)}</span></div>` : "");
+    return `<button class="back" id="pback">${icon("back", 18, 2.2)} Tu rutina</button>
+      <div class="card big stack" style="gap:12px;align-items:center;text-align:center">
+        ${prodPic(p, p?.tipo || s.tipo, 120)}
+        <span class="tiny" style="text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)">${list === "rutina_manana" ? "Mañana" : "Noche"} · Paso ${esc(s.paso)} · ${esc(s.tipo)}</span>
+        <h2 style="margin:0">${p ? `${esc(p.marca)} · ${esc(p.nombre)}` : esc(s.tipo)}</h2>
+        ${s.activo ? `<span class="pill-mini" style="align-self:center">${esc(s.activo)}</span>` : ""}
+        ${p?.desc ? `<p class="small">${esc(p.desc)}</p>` : !p ? `<p class="small">Busca un producto de este tipo que no lleve nada de tus alergias.</p>` : ""}
       </div>
-      ${p ? `<div class="between"><span class="small"><b>${p.precio != null ? `≈ ${esc(String(p.precio).replace(".", ","))} €` : ""}</b> <span class="dim">${esc(p.donde || "")}</span></span>${p.enlace ? `<a class="btn ghost small" href="${esc(p.enlace)}" target="_blank" rel="noopener nofollow">Ver ${icon("link", 16, 2)}</a>` : ""}</div>` : ""}
-      <button class="link-btn small" data-swap="${key}" style="align-self:flex-start">${open ? "Cerrar" : "Cambiar producto"}</button>
-      ${open ? swapPanel() : ""}
-    </div>`;
+      <div class="card stack" style="gap:8px">
+        ${kv("Cantidad", s.cantidad || p?.cantidad)}${kv("Cómo", s.como_aplicar)}${kv("Cuándo", s.frecuencia)}
+        ${kv("Para qué", p?.ayuda)}${kv("Piel", p?.piel)}${kv("Activos", p?.activos)}
+      </div>
+      ${p ? `<div class="card between" style="gap:12px"><span class="small"><b>${price(p)}</b> <span class="dim">${esc(p.donde || "")}</span></span>${p.enlace ? `<a class="btn small" href="${esc(p.enlace)}" target="_blank" rel="noopener nofollow">Ver en la tienda ${icon("link", 16, 2)}</a>` : ""}</div>` : ""}
+      <div class="stack" style="gap:10px"><button class="btn ghost" data-swap="${key}">${open ? "Cerrar" : "Cambiar producto"}</button>${open ? swapPanel() : ""}</div>
+      <p class="tiny">Precios aproximados. Antes de usar un producto nuevo, pruébalo 24 h en una zona pequeña.</p>`;
   };
   const swapPanel = () => {
     const sw = S.ui.swap;
@@ -942,8 +957,9 @@ SCREENS.plan = () => {
   let body = "";
   if (tab === "rutina") {
     body = `<div class="stack" style="gap:8px"><span class="eyebrow">Presupuesto</span><div class="chips">${Object.entries(BUDGETS).map(([k, b]) => `<button class="chip ${budget === k ? "on" : ""}" data-b="${k}">${b.sym} ${b.t}</button>`).join("")}</div>${P.nota_presupuesto ? `<p class="tiny">${esc(P.nota_presupuesto)}</p>` : ""}${S.ui.budgetAsk && BUDGETS[S.ui.budgetAsk] ? `<div class="notice info stack" style="gap:10px"><span>¿Cambiar a <b>${BUDGETS[S.ui.budgetAsk].t}</b>? Rehacemos tu rutina con los mismos pasos y productos de esa gama. Tarda menos de un minuto.</span><div class="row" style="gap:10px"><button class="btn small" id="bok">Sí, rehacer mi rutina</button><button class="link-btn small" id="bno">Cancelar</button></div></div>` : ""}</div>
-      <div class="row" style="gap:8px">${icon("sun", 20)}<h2>Mañana</h2></div>${(P.rutina_manana || []).map((s, i) => stepCard(s, i, "rutina_manana")).join("")}
-      <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div>${(P.rutina_noche || []).map((s, i) => stepCard(s, i, "rutina_noche")).join("")}
+      ${(() => { const ps = [...new Map([...(P.rutina_manana || []), ...(P.rutina_noche || [])].map((x) => x.producto).filter(Boolean).map((p) => [p.id, p])).values()]; const tot = ps.reduce((a, p) => a + (Number(p.precio) || 0), 0); return ps.length ? `<p class="small"><b>${ps.length} productos</b> · ≈ ${String(Math.round(tot))} € en total <span class="dim">· toca uno para ver cómo usarlo</span></p>` : ""; })()}
+      <div class="row" style="gap:8px">${icon("sun", 20)}<h2>Mañana</h2></div><div class="stack" style="gap:10px">${(P.rutina_manana || []).map((s, i) => stepRow(s, i, "rutina_manana")).join("")}</div>
+      <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div><div class="stack" style="gap:10px">${(P.rutina_noche || []).map((s, i) => stepRow(s, i, "rutina_noche")).join("")}</div>
       <p class="tiny">Precios aproximados. Antes de usar un producto nuevo, pruébalo 24 h en una zona pequeña.</p>`;
   } else if (tab === "comida") {
     const A = P.alimentacion || {}; const W = semanaOk() ? P.semana : null;
@@ -973,11 +989,15 @@ SCREENS.plan = () => {
       <div class="hab-grid">${hab.map((h, i) => `<div class="hab ${["t1", "t2", "t3"][i % 3]}">${habitArt(h)}<b>${esc(h.titulo)}</b>${h.detalle ? `<span class="tiny">${esc(h.detalle)}</span>` : ""}${h.porque ? `<span class="why">${icon("leaf", 12, 2)} ${esc(h.porque)}</span>` : ""}</div>`).join("")}</div>`;
     if (!W && !S.ui.semanaError) loadSemana();
   }
-  $app.innerHTML = `${topbar()}<div class="page">
+  const det = tab === "rutina" && S.ui.prod ? detail(S.ui.prod) : null;
+  if (S.ui.prod && !det) S.ui.prod = null;
+  $app.innerHTML = det ? `${topbar()}<div class="page">${det}${legal}</div>${fab()}${nav("plan")}` : `${topbar()}<div class="page">
     <div class="stack" style="gap:4px"><div class="eyebrow">Fase ${esc(P.fase || S.account.phase)} · ${esc(P.fase_nombre || PHASES[(S.account.phase || 1) - 1].t)}</div><h1>Tu <span class="dim">plan</span></h1><p class="small">${esc(P.objetivo_fase || "")}</p></div>
     <div class="seg">${[["rutina", "Rutina"], ["comida", "Alimentación"], ["habitos", "Hábitos"]].map(([k, t]) => `<button class="${tab === k ? "on" : ""}" data-tab="${k}">${t}</button>`).join("")}</div>
     ${body}${legal}</div>${fab()}${nav("plan")}`;
-  $app.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { S.ui.planTab = b.dataset.tab; render(); });
+  $app.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { S.ui.planTab = b.dataset.tab; S.ui.prod = null; S.ui.swap = null; render(); });
+  $app.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => { S.ui.prodScroll = window.scrollY; S.ui.prod = b.dataset.open; S.ui.swap = null; render(); window.scrollTo(0, 0); });
+  const pb = document.getElementById("pback"); if (pb) pb.onclick = () => { S.ui.prod = null; S.ui.swap = null; render(); window.scrollTo(0, S.ui.prodScroll || 0); };
   $app.querySelectorAll("[data-dia]").forEach((b) => b.onclick = () => { S.ui.dia = Number(b.dataset.dia); render(); });
   const shop = document.getElementById("shop"); if (shop) shop.onclick = () => { S.ui.shop = !S.ui.shop; render(); };
   const rs = document.getElementById("retrySem"); if (rs) rs.onclick = () => { S.ui.semanaError = null; render(); };
