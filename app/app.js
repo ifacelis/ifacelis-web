@@ -175,6 +175,8 @@ async function verifyAndClaim(email, code) {
 async function boot() {
   // Fotos de los productos (id → url); si no carga, usamos los dibujos
   S.imgs = {}; fetch("/app/productos-img.json").then((r) => r.ok ? r.json() : {}).then((m) => { S.imgs = m || {}; if (/plan/.test(location.hash)) render(); }).catch(() => {});
+  // Ajuste de cada foto (escala y posición) para que todos los productos se vean del mismo tamaño
+  S.fit = {}; fetch("/app/productos-ajuste.json").then((r) => r.ok ? r.json() : {}).then((m) => { S.fit = m || {}; if (/plan/.test(location.hash)) render(); }).catch(() => {});
   if (DEMO) { const m = await import("./demo.js"); D = m.makeDemo(S, D); }
   const session = await D.session();
   S.user = session?.user || null;
@@ -835,7 +837,9 @@ SCREENS.hoy = () => {
 function prodPic(p, tipo, size, cls = "") {
   const src = p?.id && S.imgs?.[p.id];
   if (!src) return `<div class="prod-art ${cls}">${productArt(tipo, size)}</div>`;
-  return `<div class="prod-art photo ${cls} ${/primor\.eu|arenal\.com/.test(src) ? "zoom" : ""}"><img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fail')"><span class="fb">${productArt(tipo, size)}</span></div>`;
+  const f = S.fit?.[p.id];
+  const tf = Array.isArray(f) ? ` style="transform:translate(${Number(f[1]) || 0}%,${Number(f[2]) || 0}%) scale(${Number(f[0]) || 1})"` : "";
+  return `<div class="prod-art photo ${cls}"><img src="${esc(src)}"${tf} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('fail')"><span class="fb">${productArt(tipo, size)}</span></div>`;
 }
 function productArt(tipo = "", size = 64) {
   const t = tipo.toLowerCase();
