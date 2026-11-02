@@ -956,11 +956,15 @@ SCREENS.plan = () => {
   };
   let body = "";
   if (tab === "rutina") {
-    body = `<div class="stack" style="gap:8px"><span class="eyebrow">Presupuesto</span><div class="chips">${Object.entries(BUDGETS).map(([k, b]) => `<button class="chip ${budget === k ? "on" : ""}" data-b="${k}">${b.sym} ${b.t}</button>`).join("")}</div>${P.nota_presupuesto ? `<p class="tiny">${esc(P.nota_presupuesto)}</p>` : ""}${S.ui.budgetAsk && BUDGETS[S.ui.budgetAsk] ? `<div class="notice info stack" style="gap:10px"><span>¿Cambiar a <b>${BUDGETS[S.ui.budgetAsk].t}</b>? Rehacemos tu rutina con los mismos pasos y productos de esa gama. Tarda menos de un minuto.</span><div class="row" style="gap:10px"><button class="btn small" id="bok">Sí, rehacer mi rutina</button><button class="link-btn small" id="bno">Cancelar</button></div></div>` : ""}</div>
-      ${(() => { const ps = [...new Map([...(P.rutina_manana || []), ...(P.rutina_noche || [])].map((x) => x.producto).filter(Boolean).map((p) => [p.id, p])).values()]; const tot = ps.reduce((a, p) => a + (Number(p.precio) || 0), 0); return ps.length ? `<p class="small"><b>${ps.length} productos</b> · ≈ ${String(Math.round(tot))} € en total <span class="dim">· toca uno para ver cómo usarlo</span></p>` : ""; })()}
+    body = `<div class="card stack" style="gap:12px;padding:16px">
+        <span class="eyebrow">Presupuesto</span>
+        <div class="seg">${Object.entries(BUDGETS).map(([k, b]) => `<button class="${budget === k ? "on" : ""}" data-b="${k}"><span style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1"><span style="font-size:11px;letter-spacing:.08em;opacity:.5">${b.sym}</span><span>${b.t}</span></span></button>`).join("")}</div>
+        ${P.nota_presupuesto ? `<p class="tiny" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(P.nota_presupuesto)}</p>` : ""}
+        <p class="tiny dim">Precios aproximados. Antes de usar un producto nuevo, pruébalo 24 h en una zona pequeña.</p>
+        ${S.ui.budgetAsk && BUDGETS[S.ui.budgetAsk] ? `<div class="notice info stack" style="gap:10px"><span>¿Cambiar a <b>${BUDGETS[S.ui.budgetAsk].t}</b>? Rehacemos tu rutina con los mismos pasos y productos de esa gama. Tarda menos de un minuto.</span><div class="row" style="gap:10px"><button class="btn small" id="bok">Sí, rehacer mi rutina</button><button class="link-btn small" id="bno">Cancelar</button></div></div>` : ""}</div>
+      ${(() => { const ps = [...new Map([...(P.rutina_manana || []), ...(P.rutina_noche || [])].map((x) => x.producto).filter(Boolean).map((p) => [p.id, p])).values()]; const tot = ps.reduce((a, p) => a + (Number(p.precio) || 0), 0); return ps.length ? `<div class="between" style="margin-top:6px;align-items:baseline"><span class="eyebrow">Tu rutina</span><span class="small"><b>${ps.length} productos</b> <span class="dim">· ≈ ${String(Math.round(tot))} €</span></span></div>` : ""; })()}
       <div class="row" style="gap:8px">${icon("sun", 20)}<h2>Mañana</h2></div><div class="stack" style="gap:10px">${(P.rutina_manana || []).map((s, i) => stepRow(s, i, "rutina_manana")).join("")}</div>
-      <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div><div class="stack" style="gap:10px">${(P.rutina_noche || []).map((s, i) => stepRow(s, i, "rutina_noche")).join("")}</div>
-      <p class="tiny">Precios aproximados. Antes de usar un producto nuevo, pruébalo 24 h en una zona pequeña.</p>`;
+      <div class="row" style="gap:8px;margin-top:8px">${icon("moon", 20)}<h2>Noche</h2></div><div class="stack" style="gap:10px">${(P.rutina_noche || []).map((s, i) => stepRow(s, i, "rutina_noche")).join("")}</div>`;
   } else if (tab === "comida") {
     const A = P.alimentacion || {}; const W = semanaOk() ? P.semana : null;
     const sel = S.ui.dia ?? todayIdx(); const d = W?.dias?.[sel];
