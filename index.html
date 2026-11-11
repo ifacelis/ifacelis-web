@@ -12,6 +12,9 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ifacelis">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,500,500i|plus-jakarta-sans:400,500,600,700,800&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="/hero-face.jpg">
@@ -383,5 +386,6 @@ footer{padding:56px 0 64px;border-top:1px solid var(--line)}
   }, { threshold: 0.15 }) : null;
   document.querySelectorAll("section:not(.hero) .reveal").forEach((el) => io ? io.observe(el) : el.classList.add("in"));
 </script>
+<script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));</script>
 </body>
 </html>
