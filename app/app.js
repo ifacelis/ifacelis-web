@@ -160,6 +160,18 @@ let D = {
   },
 };
 
+// Correos de Lis: permiso para consejos (comerciales) y opción de no recibir ninguno.
+// Se guarda sin tocar updated_at, que se usa para saber si alguien rehízo el cuestionario.
+async function saveEmailPrefs(on) {
+  try {
+    const patch = on
+      ? { user_id: S.user.id, marketing_consent_at: S.profile?.marketing_consent_at || new Date().toISOString(), emails_off: false }
+      : { user_id: S.user.id, marketing_consent_at: null, emails_off: true };
+    const { data, error } = await sb.from("profiles").upsert(patch).select("*").single();
+    if (error) throw error; S.profile = data;
+  } catch (e) { console.warn(e); }
+}
+
 // Entra con el código del correo y, si venía de un escaneo sin cuenta, lo pasa a su cuenta
 async function verifyAndClaim(email, code) {
   const anonToken = S.user?.is_anonymous ? await D.token() : null;
@@ -327,6 +339,7 @@ SCREENS.login = () => {
       <form id="f" class="stack">
         <div class="field"><label for="em">Tu correo</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div>
         <label class="check"><input type="checkbox" id="ok" required><span>Tengo 14 años o más y acepto las <a href="/terminos.html" target="_blank">condiciones</a> y la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
+        <label class="check"><input type="checkbox" id="mk"${st.mk ? " checked" : ""}><span>Quiero que Lis me envíe por correo consejos para mi piel y recordatorios. Puedo darme de baja cuando quiera.</span></label>
         <button class="btn" id="b">Enviarme el código</button>
       </form>
       ${legal}</div>`;
@@ -334,6 +347,7 @@ SCREENS.login = () => {
       e.preventDefault();
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Enviando…";
       st.email = document.getElementById("em").value.trim().toLowerCase();
+      st.mk = document.getElementById("mk").checked;
       try { await D.signIn(st.email); st.step = "code"; render(); }
       catch (err) { toast(/rate|limit/i.test(err.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido enviar. Revisa el correo."); b.disabled = false; b.textContent = "Enviarme el código"; }
     };
@@ -353,6 +367,7 @@ SCREENS.login = () => {
       const b = document.getElementById("b"); b.disabled = true; b.textContent = "Entrando…";
       try {
         await verifyAndClaim(st.email, document.getElementById("code").value.replace(/\D/g, ""));
+        if (st.mk) await saveEmailPrefs(true);
         S.ui.login = null; go("#/hoy");
       } catch { toast("Ese código no vale o ya se ha usado. Pulsa «Reenviar código»."); b.disabled = false; b.textContent = "Entrar"; }
     };
@@ -642,7 +657,7 @@ SCREENS.suscribirse = () => {
   const prios = (r.prioridades || []).map((id) => PARAM_NAMES[id] || id);
   let account = "";
   if (needsEmail && st.step === "email") {
-    account = `<form id="ef" class="stack"><div class="field"><label for="em">Tu correo, para guardar tu informe y tu plan</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div><button class="btn" id="eb">Continuar</button></form>
+    account = `<form id="ef" class="stack"><div class="field"><label for="em">Tu correo, para guardar tu informe y tu plan</label><input class="input" id="em" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div><label class="check"><input type="checkbox" id="mk"${st.mk ? " checked" : ""}><span>Quiero que Lis me envíe por correo consejos para mi piel y recordatorios. Puedo darme de baja cuando quiera.</span></label><button class="btn" id="eb">Continuar</button></form>
       <p class="tiny" style="text-align:center">Te enviamos un código para confirmarlo. ¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>`;
   } else if (needsEmail && st.step === "code") {
     account = `<form id="cf" class="stack"><p class="small">Escribe el código de 6 cifras que hemos enviado a <b>${esc(st.email)}</b>. Si no lo ves, mira en spam o promociones.</p><input class="input otp" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required><button class="btn" id="cb">Confirmar</button></form>
@@ -674,6 +689,7 @@ SCREENS.suscribirse = () => {
   if (ef) ef.onsubmit = async (e) => {
     e.preventDefault(); const b = document.getElementById("eb"); b.disabled = true;
     st.email = document.getElementById("em").value.trim().toLowerCase();
+    st.mk = document.getElementById("mk").checked;
     // Siempre entramos con código (sirve para correos nuevos y para cuentas que ya existen);
     // lo que hizo sin cuenta (fotos, análisis) se pasa a su cuenta con /api/claim
     try { await D.signIn(st.email); st.step = "code"; st.mode = "login"; render(); }
@@ -689,6 +705,7 @@ SCREENS.suscribirse = () => {
     const code = document.getElementById("code").value.replace(/\D/g, "");
     try {
       await verifyAndClaim(st.email, code);
+      if (st.mk) await saveEmailPrefs(true);
       st.step = "pay"; st.mode = null; render();
     }
     catch { toast("Ese código no vale o ya se ha usado. Pulsa «Enviarme otro código»."); b.disabled = false; }
@@ -1178,6 +1195,7 @@ SCREENS.cuenta = () => {
     <div class="card stack"><div class="kv"><b>Correo</b><span>${esc(S.user?.email || "Sin correo todavía")}</span></div><div class="kv"><b>Plan</b><span>${esc(status)}</span></div></div>
     ${a.stripe_customer_id ? `<button class="btn ghost" id="portal">Gestionar o cancelar suscripción</button>` : ""}
     ${active ? `<p class="tiny">Si cancelas, sigues teniendo acceso hasta el final del mes pagado. Si vuelves más adelante, empiezas de nuevo con un escaneo nuevo.</p>` : ""}
+    ${S.user?.email ? `<div class="card stack"><label class="check" style="color:var(--ink)"><input type="checkbox" id="mails"${!S.profile?.emails_off && (S.profile?.marketing_consent_at || active) ? " checked" : ""}><span><b>Correos de Lis</b><br><span class="small" style="color:var(--muted)">Consejos para tu piel y recordatorios de tu rutina y tus revisiones.</span></span></label></div>` : ""}
     ${active ? `<button class="btn ghost" id="editq">Cambiar mis respuestas</button>` : ""}
     <a class="btn ghost" href="/privacidad.html" target="_blank">Privacidad</a>
     <button class="btn ghost" id="out">${icon("out", 20)} Cerrar sesión</button>
@@ -1185,6 +1203,7 @@ SCREENS.cuenta = () => {
     <div class="card stack" style="border-color:var(--bad-bg)"><h3>Eliminar mi cuenta y mis fotos</h3><p class="small">Se borra todo: fotos, informes, plan, racha y chat. Se cancela tu suscripción. No se puede deshacer.</p><button class="btn danger small" id="del">Eliminar todo</button></div>
     ${legal}</div>`;
   const po = document.getElementById("portal"); if (po) po.onclick = openPortal;
+  const ml = document.getElementById("mails"); if (ml) ml.onchange = async () => { await saveEmailPrefs(ml.checked); toast(ml.checked ? "Lis te escribirá de vez en cuando." : "No te enviaremos más correos de Lis."); };
   const eq = document.getElementById("editq"); if (eq) eq.onclick = () => { S.ui.q = { i: 0, a: { ...(S.profile?.questionnaire || {}), presupuesto: S.profile?.budget } }; go("#/cuestionario"); };
   document.getElementById("out").onclick = async () => { await D.signOut(); S.user = null; location.href = "/"; };
   document.getElementById("del").onclick = async () => {

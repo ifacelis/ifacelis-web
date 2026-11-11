@@ -14,6 +14,9 @@
     },
     "api/semana.js": {
       "maxDuration": 60
+    },
+    "api/cron.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -33,6 +36,12 @@
           "value": "camera=(self), microphone=()"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "7 8 * * *"
     }
   ]
 }
