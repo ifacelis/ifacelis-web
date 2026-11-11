@@ -1,8 +1,19 @@
 // Stripe avisa aquí cuando alguien paga, renueva o se da de baja.
+// Esta función también hace la tarea diaria y la baja de los correos de Lis,
+// porque el plan gratis de Vercel solo permite 12 funciones.
 import { env, json } from "./_lib/common.js";
 import { stripe, applySubscription, uidForCustomer } from "./_lib/stripe.js";
+import { runCron } from "./_lib/cron.js";
+import { bajaGET, bajaPOST } from "./_lib/baja.js";
+
+// GET: con ?u= es una baja de correos; sin nada, es la tarea diaria de Vercel Cron
+export async function GET(request) {
+  if (new URL(request.url).searchParams.has("u")) return bajaGET(request);
+  return runCron(request);
+}
 
 export async function POST(request) {
+  if (new URL(request.url).searchParams.has("u")) return bajaPOST(request); // baja con un clic desde Gmail / Apple Mail
   const s = stripe();
   const raw = await request.text();
   let event;
