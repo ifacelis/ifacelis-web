@@ -79,7 +79,7 @@ function leadEmail(step, { uid, scan }) {
     return { subject: t, ...layout({ uid, preheader: "Un consejo rápido para tu piel.", title: t, paras, button: { text: "Ver mi plan", url: solucion.url } }) };
   }
   const paras = [
-    `Tu rutina sigue lista y esperándote.`,
+    `La dejé preparada con los productos que mejor encajan con tu piel y con tu presupuesto, y sigue ahí cuando quieras empezar.`,
     `El primer mes es a **3,49 €**, y después 4,99 € al mes. Sin permanencia: cancelas cuando quieras desde la app.`,
     `Incluye tu rutina de mañana y noche con productos reales, la racha diaria, una revisión cada semana con antes y después, consejos de alimentación y yo para resolver tus dudas cuando las tengas.`,
   ];
@@ -182,3 +182,6 @@ export async function runCron(request) {
   console.log("cron", report);
   return Response.json(report);
 }
+
+// Para las muestras y para otras funciones
+export { leadEmail, reviewEmail, streakEmail };
