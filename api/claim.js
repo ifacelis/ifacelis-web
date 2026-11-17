@@ -1,6 +1,7 @@
 // Cuando alguien escanea sin cuenta (sesión anónima) y luego entra con una cuenta que ya existía,
 // pasamos su escaneo, sus fotos y su consentimiento a esa cuenta.
 import { admin, handler, json, HttpError, requireUser, readBody, getAccount } from "./_lib/common.js";
+import { reportEmail, sendEmail } from "./_lib/email.js";
 
 export const POST = handler(async (request) => {
   const user = await requireUser(request);
@@ -54,5 +55,16 @@ export const POST = handler(async (request) => {
 
   // 5) Borrar la sesión anónima (ya vacía)
   await db.auth.admin.deleteUser(aid);
+
+  // 6) Enviarle su informe por correo (si falla, no impide entrar)
+  try {
+    const { data: last } = await db.from("scans").select("result,created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (last?.result && user.email) {
+      const date = new Date(last.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "Europe/Madrid" });
+      const mail = reportEmail({ result: last.result, date });
+      await sendEmail({ to: user.email, uid, subject: mail.subject, html: mail.html, text: mail.text });
+    }
+  } catch (e) { console.error("report email", e.message); }
+
   return json({ moved: (scans || []).length });
 });
