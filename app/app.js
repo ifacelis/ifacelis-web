@@ -622,19 +622,87 @@ SCREENS.informe = () => {
   const r = scan.result || {};
   const active = isActive();
   const prios = (r.prioridades || []).map((id) => PARAM_NAMES[id] || id);
-  $app.innerHTML = `${active ? "" : topbar()}<div class="page ${active ? "" : "no-nav"}">
+  // Sin correo todavía: enseñamos la puntuación y lo que más hay que trabajar; el resto, al dejar el correo
+  const locked = !active && (!S.user?.email || S.user?.is_anonymous);
+  $app.innerHTML = `${active || locked ? "" : topbar()}<div class="page ${active ? "" : "no-nav"}">
     ${active ? backBtn("#/progreso") : ""}
     <div class="stack" style="gap:6px"><div class="eyebrow">Análisis de Lis · ${fmtLong(scan.created_at)}</div><h1>${esc(r.titulo || "Tu piel")}</h1></div>
     <div class="card big tint-ink row" style="justify-content:space-between">${ring(r.puntuacion_global).replace(/#2B2725/g, "#F6F1EC").replace(/#E8E2DA/g, "#4A4250")}<div class="stack" style="gap:4px;align-items:flex-end;text-align:right;color:#F3EDE7"><span class="tiny" style="color:#A99E96">TIPO DE PIEL</span><b style="font-size:20px;text-transform:capitalize">${esc(r.tipo_piel || "–")}</b>${prios.length ? `<span class="tiny" style="margin-top:8px;color:#A99E96">A TRABAJAR</span><b class="small">${prios.map(esc).join(" · ")}</b>` : ""}</div></div>
     ${derivarBox(r)}
     ${r.cambio ? `<div class="notice info">${esc(r.cambio)}</div>` : ""}
-    <div class="card big row" style="align-items:flex-start">${faceMap(r.parametros, 110)}<div class="stack small" style="gap:6px"><h3>Dónde lo vemos</h3>${["alto", "moderado", "leve"].map((l) => `<div class="row" style="gap:8px"><span class="swatch" style="width:12px;height:12px;background:${LVL_COLOR[l]}"></span><span class="tiny" style="text-transform:capitalize">${l}</span></div>`).join("")}</div></div>
+    ${locked ? reportGate(r) : `<div class="card big row" style="align-items:flex-start">${faceMap(r.parametros, 110)}<div class="stack small" style="gap:6px"><h3>Dónde lo vemos</h3>${["alto", "moderado", "leve"].map((l) => `<div class="row" style="gap:8px"><span class="swatch" style="width:12px;height:12px;background:${LVL_COLOR[l]}"></span><span class="tiny" style="text-transform:capitalize">${l}</span></div>`).join("")}</div></div>
     <div class="card big stack" style="gap:14px"><h2>Lo que vemos</h2>${paramRows(r.parametros)}</div>
-    ${active ? "" : paywall(r)}
+    ${active ? "" : paywall(r)}`}
     ${legal}
   </div>`;
   const pay = document.getElementById("pay"); if (pay) pay.onclick = () => go("#/suscribirse");
+  if (locked) bindReportGate();
 };
+
+// ---------- Informe completo a cambio del correo (y se lo enviamos) ----------
+function reportGate(r) {
+  const st = S.ui.gate || (S.ui.gate = { step: "email", email: "", mk: false });
+  const n = (r.parametros || []).length || 8;
+  const preview = `<div class="locked card"><div class="blur stack" aria-hidden="true">
+      ${["Acné", "Rojez · rosácea", "Hidratación"].map((t, i) => `<div class="stack" style="gap:6px"><div class="between"><h3>${t}</h3><span class="lvl ${["moderado", "leve", "bien"][i]}">${["moderado", "leve", "bien"][i]}</span></div><div class="bar"><i class="${["moderado", "leve", "bien"][i]}" style="width:${[62, 38, 80][i]}%"></i></div></div>`).join("<hr>")}
+    </div><div class="over">${icon("lock", 24)}<b>${n} parámetros, zona por zona</b><span class="small">Gratis con tu correo</span></div></div>`;
+  const form = st.step === "email"
+    ? `<form id="gf" class="stack">
+        <div class="field"><label for="gem">Tu correo</label><input class="input" id="gem" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div>
+        <label class="check"><input type="checkbox" id="gok" required><span>Tengo 14 años o más y acepto las <a href="/terminos.html" target="_blank">condiciones</a> y la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
+        <label class="check"><input type="checkbox" id="gmk"${st.mk ? " checked" : ""}><span>Quiero que Lis me envíe por correo consejos para mi piel y recordatorios. Puedo darme de baja cuando quiera.</span></label>
+        <button class="btn" id="gb">Ver mi informe gratis</button>
+        <p class="tiny" style="text-align:center">Te enviamos un código para confirmarlo. ¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>
+      </form>`
+    : `<form id="gc" class="stack">
+        <p class="small">Escribe el código de 6 cifras que hemos enviado a <b>${esc(st.email)}</b>. Si no lo ves, mira en spam o promociones.</p>
+        <input class="input otp" id="gcode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
+        <button class="btn" id="gcb">Ver mi informe</button>
+        <div class="between"><button type="button" class="link-btn small" id="gres">Enviarme otro código</button><button type="button" class="link-btn small" id="gchg">Cambiar correo</button></div>
+      </form>`;
+  return `${preview}
+    <div class="card big tint-stone stack" style="gap:14px">
+      <div class="eyebrow">Tu informe completo · Gratis</div>
+      <h2>Tu informe completo es gratis</h2>
+      <p class="small">Solo tienes que dejar tu correo para verlo entero, zona por zona: cada parámetro, dónde lo vemos y por qué. También te lo envío por correo para que lo tengas guardado. No tienes que pagar nada.</p>
+      ${form}
+    </div>`;
+}
+
+function bindReportGate() {
+  const st = S.ui.gate;
+  const gf = document.getElementById("gf");
+  if (gf) gf.onsubmit = async (e) => {
+    e.preventDefault();
+    const b = document.getElementById("gb"); b.disabled = true; b.textContent = "Enviando…";
+    st.email = document.getElementById("gem").value.trim().toLowerCase();
+    st.mk = document.getElementById("gmk").checked;
+    try { await D.signIn(st.email); st.step = "code"; render(); setTimeout(() => document.getElementById("gcode")?.focus(), 50); }
+    catch (err) {
+      b.disabled = false; b.textContent = "Ver mi informe gratis";
+      toast(/rate|limit|seconds/i.test(err.message) ? "Espera un minuto antes de pedir otro código." : "No se ha podido enviar el código. Revisa el correo.");
+    }
+  };
+  const gc = document.getElementById("gc");
+  if (gc) gc.onsubmit = async (e) => {
+    e.preventDefault();
+    const b = document.getElementById("gcb"); b.disabled = true; b.textContent = "Abriendo…";
+    try {
+      await verifyAndClaim(st.email, document.getElementById("gcode").value.replace(/\D/g, ""));
+      if (st.mk) await saveEmailPrefs(true);
+      S.ui.gate = null;
+      toast("¡Listo! También te he enviado el informe por correo.");
+      render();
+    } catch { toast("Ese código no vale o ya se ha usado. Pulsa «Enviarme otro código»."); b.disabled = false; b.textContent = "Ver mi informe"; }
+  };
+  const chg = document.getElementById("gchg"); if (chg) chg.onclick = () => { st.step = "email"; render(); };
+  const rs = document.getElementById("gres"); if (rs) rs.onclick = async () => {
+    rs.disabled = true;
+    try { await D.signIn(st.email); toast("Te hemos enviado un código nuevo. Usa el del último correo."); }
+    catch { toast("Espera un minuto antes de pedir otro código."); }
+    setTimeout(() => { rs.disabled = false; }, 30000);
+  };
+}
 
 function paywall(r) {
   return `<div class="card big tint-stone stack" style="gap:14px">
@@ -1220,7 +1288,7 @@ boot().catch((e) => { console.error(e); $app.innerHTML = errorView(e); });
 (function autoSubmitCode(){
   document.addEventListener("input", (e) => {
     const t = e.target;
-    if (!t || t.id !== "code") return;
+    if (!t || (t.id !== "code" && t.id !== "gcode")) return;
     const v = t.value.replace(/\D/g, "").slice(0, 6);
     if (v !== t.value) t.value = v;
     const f = t.form;
@@ -1231,7 +1299,7 @@ boot().catch((e) => { console.error(e); $app.innerHTML = errorView(e); });
     }
   });
   document.addEventListener("visibilitychange", () => {
-    const c = document.getElementById("code");
+    const c = document.getElementById("code") || document.getElementById("gcode");
     if (document.visibilityState === "visible" && c && !c.value) c.focus();
   });
 })();
