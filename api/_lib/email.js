@@ -13,6 +13,15 @@ export const checkUnsub = (uid, t) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
+// Enlace para confirmar que quiere los consejos de Lis (doble confirmación del permiso comercial)
+const signAlta = (uid) => crypto.createHmac("sha256", env("SUPABASE_SECRET_KEY")).update(`alta:${uid}`).digest("hex").slice(0, 32);
+export const altaUrl = (uid) => `${appUrl()}/api/baja?u=${encodeURIComponent(uid)}&si=${signAlta(uid)}`;
+export const checkAlta = (uid, t) => {
+  if (!uid || !t) return false;
+  const a = Buffer.from(signAlta(uid)), b = Buffer.from(String(t));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 // paras: lista de párrafos (texto plano; **negrita** permitida). button: { text, url }
@@ -108,7 +117,7 @@ const PARAM_LABEL = { acne: "Acné", arrugas: "Arrugas", rojez_rosacea: "Rojez �
 const ZONE_LABEL = { frente: "frente", entrecejo: "entrecejo", nariz: "nariz", contorno_ojos: "contorno de ojos", menton: "mentón", mejilla_izquierda: "mejilla izquierda", mejilla_derecha: "mejilla derecha", mandibula_izquierda: "mandíbula izquierda", mandibula_derecha: "mandíbula derecha", sien_izquierda: "sien izquierda", sien_derecha: "sien derecha" };
 const LVL = { bien: ["#DDE9DF", "#3F6B4F"], leve: ["#E1DCEC", "#4F4578"], moderado: ["#F3E6D2", "#8A5A1E"], alto: ["#F2DADA", "#8E3B3B"] };
 
-export function reportEmail({ result = {}, date }) {
+export function reportEmail({ result = {}, date, optIn = null }) {
   const r = result;
   const prios = (r.prioridades || []).map((p) => PARAM_LABEL[p] || p);
   const params = [...(r.parametros || [])].sort((a, b) => PARAM_ORDER.indexOf(a.id) - PARAM_ORDER.indexOf(b.id));
@@ -139,17 +148,16 @@ ${(p.zonas || []).length ? `<p style="margin:4px 0 0;font-size:13px;line-height:
 <p style="margin:14px 0 16px;font-size:14px;line-height:1.55;color:#3A3330">Tu rutina de mañana y noche con productos reales, cuánto usar de cada uno y dónde comprarlo, más tu revisión semanal. <b>Primer mes a 3,49 €</b>, sin permanencia.</p>
 <table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:#2B2725;border-radius:999px"><a href="${solucion}" style="display:inline-block;padding:14px 26px;font-size:15px;font-weight:700;color:#F6F3EF;text-decoration:none">Desbloquear mi solución</a></td></tr></table>
 </td></tr></table>`;
-  const highlight = `${scoreCard}${derivar}${rows ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px">${rows}</table>` : ""}${locked}`;
+  const highlight = `${scoreCard}${derivar}${rows ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px">${rows}</table>` : ""}${locked}${optIn ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px"><tr><td style="border:1px solid #E6DED7;border-radius:16px;padding:16px 18px;font-size:14px;line-height:1.55;color:#3A3330">Has pedido que Lis te envíe consejos para tu piel y recordatorios. Confírmalo con un clic:<br><a href="${optIn}" style="display:inline-block;margin-top:10px;color:#2B2725;font-weight:700">Sí, quiero los consejos de Lis →</a><br><span style="font-size:12px;color:#8A8079">Si no lo pulsas, solo recibirás este informe.</span></td></tr></table>` : ""}`;
   const title = r.titulo || "Tu informe de piel";
-  return {
-    subject: "Tu informe de piel de Ifacelis",
-    ...layout({
+  const out = layout({
       uid: "",
       preheader: score != null ? `Tu piel: ${score}/100${prios.length ? ` · A trabajar: ${prios.join(", ").toLowerCase()}` : ""}` : "Aquí tienes tu análisis completo.",
       title,
       paras: [`Aquí tienes tu informe completo${date ? ` del ${date}` : ""}, zona por zona, para que lo tengas guardado. Es gratis y es tuyo.`],
       highlight,
       unsub: false,
-    }),
-  };
+    });
+  out.text += `\n\nVer mi solución: ${solucion}` + (optIn ? `\nSí, quiero los consejos de Lis: ${optIn}` : "");
+  return { subject: "Tu informe de piel de Ifacelis", ...out };
 }

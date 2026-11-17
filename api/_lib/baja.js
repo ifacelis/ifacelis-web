@@ -1,7 +1,7 @@
 // Darse de baja de los correos de Lis desde el enlace de cualquier correo (/api/baja, que Vercel pasa a /api/webhook).
 // GET: abre una página de confirmación. POST: baja con un clic (botón del propio Gmail / Apple Mail).
 import { admin } from "./common.js";
-import { checkUnsub, appUrl } from "./email.js";
+import { checkUnsub, checkAlta, appUrl } from "./email.js";
 
 async function optOut(uid) {
   await admin().from("profiles").upsert({ user_id: uid, emails_off: true, marketing_consent_at: null });
@@ -17,6 +17,16 @@ a{background:#2B2725;color:#F6F3EF;border-radius:999px;padding:13px 24px;text-de
 export async function bajaGET(request) {
   const url = new URL(request.url);
   const uid = url.searchParams.get("u"), t = url.searchParams.get("t");
+  // Confirmación de los consejos de Lis (desde el correo del informe)
+  if (url.searchParams.has("si")) {
+    if (!checkAlta(uid, url.searchParams.get("si"))) return page("Enlace no válido", "Este enlace no es correcto. Puedes activar los correos desde Mi cuenta en la app.");
+    try {
+      const db = admin();
+      const { data: p } = await db.from("profiles").select("marketing_consent_at").eq("user_id", uid).maybeSingle();
+      await db.from("profiles").upsert({ user_id: uid, marketing_consent_at: p?.marketing_consent_at || new Date().toISOString(), emails_off: false });
+    } catch (e) { console.error(e); return page("Vaya…", "No hemos podido guardarlo ahora mismo. Prueba otra vez en un momento."); }
+    return page("¡Hecho!", "Lis te enviará de vez en cuando consejos para tu piel. Puedes darte de baja cuando quieras desde cualquier correo.");
+  }
   if (!checkUnsub(uid, t)) return page("Enlace no válido", "Este enlace de baja no es correcto. Puedes desactivar los correos desde Mi cuenta en la app.");
   try { await optOut(uid); }
   catch (e) { console.error(e); return page("Vaya…", "No hemos podido darte de baja ahora mismo. Prueba otra vez en un momento."); }

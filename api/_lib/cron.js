@@ -119,7 +119,10 @@ export async function runCron(request) {
     return Response.json(report);
   }
 
-  const users = (await allUsers(db)).filter((u) => u.email && !u.is_anonymous);
+  // Con cuenta, o sin cuenta pero que dejó su correo para ver el informe (los consejos solo si confirmó el permiso)
+  const users = (await allUsers(db))
+    .map((u) => (u.is_anonymous ? { ...u, email: u.user_metadata?.lead_email || null } : u))
+    .filter((u) => u.email);
   if (!users.length) return Response.json(report);
   const ids = users.map((u) => u.id);
 
