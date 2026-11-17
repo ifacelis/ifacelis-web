@@ -78,6 +78,7 @@ export function makeDemo(S, realD) {
     async diaryAdd() {},
     async chatHistory() { return []; },
     async signIn() {}, async verify() { return { user }; }, async signOut() {},
+    async lead(email, mk) { await new Promise((r) => setTimeout(r, 700)); user = { ...user, user_metadata: { lead_email: email, lead_mk: mk } }; S.user = user; return { ok: true, sent: true }; },
     async api(path, body) {
       await new Promise((r) => setTimeout(r, 1200));
       if (path === "/api/scan") { const s = body.kind === "weekly" ? weekly(4, 76, 11) : { ...SCAN0, created_at: new Date().toISOString() }; s.created_at = new Date().toISOString(); return { scan: s, plan_dirty: body.kind === "initial" }; }

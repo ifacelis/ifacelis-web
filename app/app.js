@@ -145,6 +145,12 @@ let D = {
     if (error) throw error; return data.session;
   },
   async signOut() { await sb.auth.signOut(); },
+  // Deja su correo sin crear cuenta: ve el informe entero y se lo enviamos por correo
+  async lead(email, mk) {
+    const out = await D.api("/api/claim", { lead: { email, mk } });
+    try { const { data } = await sb.auth.refreshSession(); if (data?.user) S.user = data.user; } catch {}
+    return out;
+  },
   async signInAnon() {
     const { data, error } = await sb.auth.signInAnonymously();
     if (error) throw error; return data.user;
@@ -177,7 +183,8 @@ async function verifyAndClaim(email, code) {
   const anonToken = S.user?.is_anonymous ? await D.token() : null;
   const session = await D.verify(email, code);
   S.user = session.user;
-  if (anonToken) { try { await D.api("/api/claim", { anon_token: anonToken }); } catch (e) { console.warn(e); } }
+  // Siempre: también recoge escaneos hechos en otro móvil con este mismo correo
+  try { await D.api("/api/claim", { anon_token: anonToken }); } catch (e) { console.warn(e); }
   await D.loadAll();
 }
 
@@ -623,7 +630,7 @@ SCREENS.informe = () => {
   const active = isActive();
   const prios = (r.prioridades || []).map((id) => PARAM_NAMES[id] || id);
   // Sin correo todavía: enseñamos la puntuación y lo que más hay que trabajar; el resto, al dejar el correo
-  const locked = !active && (!S.user?.email || S.user?.is_anonymous);
+  const locked = !active && (!S.user?.email || S.user?.is_anonymous) && !S.user?.user_metadata?.lead_email;
   $app.innerHTML = `${active || locked ? "" : topbar()}<div class="page ${active ? "" : "no-nav"}">
     ${active ? backBtn("#/progreso") : ""}
     <div class="stack" style="gap:6px"><div class="eyebrow">Análisis de Lis · ${fmtLong(scan.created_at)}</div><h1>${esc(r.titulo || "Tu piel")}</h1></div>
@@ -646,19 +653,13 @@ function reportGate(r) {
   const preview = `<div class="locked card"><div class="blur stack" aria-hidden="true">
       ${["Acné", "Rojez · rosácea", "Hidratación"].map((t, i) => `<div class="stack" style="gap:6px"><div class="between"><h3>${t}</h3><span class="lvl ${["moderado", "leve", "bien"][i]}">${["moderado", "leve", "bien"][i]}</span></div><div class="bar"><i class="${["moderado", "leve", "bien"][i]}" style="width:${[62, 38, 80][i]}%"></i></div></div>`).join("<hr>")}
     </div><div class="over">${icon("lock", 24)}<b>${n} parámetros, zona por zona</b><span class="small">Gratis con tu correo</span></div></div>`;
-  const form = st.step === "email"
-    ? `<form id="gf" class="stack">
-        <div class="field"><label for="gem">Tu correo</label><input class="input" id="gem" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}"></div>
+  const form = `<form id="gf" class="stack">
+        <div class="field"><label for="gem">Tu correo</label><input class="input" id="gem" type="email" autocomplete="email" required placeholder="tu@correo.com" value="${esc(st.email)}">
+        <button type="button" class="link-btn small" id="gfix" hidden style="text-align:left"></button></div>
         <label class="check"><input type="checkbox" id="gok" required><span>Tengo 14 años o más y acepto las <a href="/terminos.html" target="_blank">condiciones</a> y la <a href="/privacidad.html" target="_blank">política de privacidad</a>.</span></label>
         <label class="check"><input type="checkbox" id="gmk"${st.mk ? " checked" : ""}><span>Quiero que Lis me envíe por correo consejos para mi piel y recordatorios. Puedo darme de baja cuando quiera.</span></label>
         <button class="btn" id="gb">Ver mi informe gratis</button>
-        <p class="tiny" style="text-align:center">Te enviamos un código para confirmarlo. ¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>
-      </form>`
-    : `<form id="gc" class="stack">
-        <p class="small">Escribe el código de 6 cifras que hemos enviado a <b>${esc(st.email)}</b>. Si no lo ves, mira en spam o promociones.</p>
-        <input class="input otp" id="gcode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······" required>
-        <button class="btn" id="gcb">Ver mi informe</button>
-        <div class="between"><button type="button" class="link-btn small" id="gres">Enviarme otro código</button><button type="button" class="link-btn small" id="gchg">Cambiar correo</button></div>
+        <p class="tiny" style="text-align:center">Lo ves al momento, sin contraseñas ni códigos. ¿Ya tienes cuenta? <a href="#/login">Entra aquí</a></p>
       </form>`;
   return `${preview}
     <div class="card big tint-stone stack" style="gap:14px">
@@ -669,38 +670,43 @@ function reportGate(r) {
     </div>`;
 }
 
+// Errores típicos al escribir el correo: «¿Querías decir …@gmail.com?»
+const MAIL_FIX = { "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmail.co": "gmail.com", "gmail.es": "gmail.com", "gmal.com": "gmail.com", "gamil.com": "gmail.com", "gnail.com": "gmail.com", "gmail.con": "gmail.com", "gmail.cm": "gmail.com", "hotmial.com": "hotmail.com", "hotmai.com": "hotmail.com", "hotmail.con": "hotmail.com", "hotmil.com": "hotmail.com", "hotmal.com": "hotmail.com", "hotmail.co": "hotmail.com", "hotmial.es": "hotmail.es", "hotmail.e": "hotmail.es", "outlok.com": "outlook.com", "outloo.com": "outlook.com", "outlook.con": "outlook.com", "yahooo.com": "yahoo.com", "yaho.com": "yahoo.com", "yahoo.e": "yahoo.es", "icloud.con": "icloud.com", "iclod.com": "icloud.com", "icloud.co": "icloud.com" };
+function mailFix(email) {
+  const [u, d] = String(email).split("@");
+  return u && d && MAIL_FIX[d] ? `${u}@${MAIL_FIX[d]}` : null;
+}
+
 function bindReportGate() {
   const st = S.ui.gate;
   const gf = document.getElementById("gf");
-  if (gf) gf.onsubmit = async (e) => {
+  if (!gf) return;
+  const inp = document.getElementById("gem"), fix = document.getElementById("gfix");
+  const check = () => {
+    const f = mailFix(inp.value.trim().toLowerCase());
+    fix.hidden = !f; if (f) { fix.dataset.v = f; fix.innerHTML = `¿Querías decir <b>${esc(f)}</b>?`; }
+    return f;
+  };
+  inp.addEventListener("input", check); check();
+  fix.onclick = () => { inp.value = fix.dataset.v; fix.hidden = true; };
+  gf.onsubmit = async (e) => {
     e.preventDefault();
-    const b = document.getElementById("gb"); b.disabled = true; b.textContent = "Enviando…";
-    st.email = document.getElementById("gem").value.trim().toLowerCase();
+    // Si parece un error al escribir, lo avisamos una vez antes de seguir
+    const f = check();
+    if (f && st.warned !== inp.value) { st.warned = inp.value; return toast("Revisa tu correo: ¿querías decir " + f + "?"); }
+    const b = document.getElementById("gb"); b.disabled = true; b.textContent = "Abriendo tu informe…";
+    st.email = inp.value.trim().toLowerCase();
     st.mk = document.getElementById("gmk").checked;
-    try { await D.signIn(st.email); st.step = "code"; render(); setTimeout(() => document.getElementById("gcode")?.focus(), 50); }
-    catch (err) {
-      b.disabled = false; b.textContent = "Ver mi informe gratis";
-      toast(/rate|limit|seconds/i.test(err.message) ? "Espera un minuto antes de pedir otro código." : "No se ha podido enviar el código. Revisa el correo.");
-    }
-  };
-  const gc = document.getElementById("gc");
-  if (gc) gc.onsubmit = async (e) => {
-    e.preventDefault();
-    const b = document.getElementById("gcb"); b.disabled = true; b.textContent = "Abriendo…";
     try {
-      await verifyAndClaim(st.email, document.getElementById("gcode").value.replace(/\D/g, ""));
-      if (st.mk) await saveEmailPrefs(true);
+      const out = await D.lead(st.email, st.mk);
+      if (!S.user?.user_metadata?.lead_email) S.user = { ...S.user, user_metadata: { ...(S.user?.user_metadata || {}), lead_email: st.email } };
       S.ui.gate = null;
-      toast("¡Listo! También te he enviado el informe por correo.");
-      render();
-    } catch { toast("Ese código no vale o ya se ha usado. Pulsa «Enviarme otro código»."); b.disabled = false; b.textContent = "Ver mi informe"; }
-  };
-  const chg = document.getElementById("gchg"); if (chg) chg.onclick = () => { st.step = "email"; render(); };
-  const rs = document.getElementById("gres"); if (rs) rs.onclick = async () => {
-    rs.disabled = true;
-    try { await D.signIn(st.email); toast("Te hemos enviado un código nuevo. Usa el del último correo."); }
-    catch { toast("Espera un minuto antes de pedir otro código."); }
-    setTimeout(() => { rs.disabled = false; }, 30000);
+      toast(out?.sent === false ? "¡Listo! Aquí tienes tu informe completo." : "¡Listo! También te he enviado el informe por correo.");
+      render(); window.scrollTo(0, 0);
+    } catch (err) {
+      b.disabled = false; b.textContent = "Ver mi informe gratis";
+      toast(err.status === 400 ? err.message : "No se ha podido abrir. Inténtalo de nuevo en un momento.");
+    }
   };
 }
 
@@ -719,7 +725,7 @@ function paywall(r) {
 // ---------- Suscribirse (la página de la solución) ----------
 SCREENS.suscribirse = () => {
   if (isActive()) return go("#/hoy");
-  const st = S.ui.sub || (S.ui.sub = { step: "email", email: "" });
+  const st = S.ui.sub || (S.ui.sub = { step: "email", email: S.user?.user_metadata?.lead_email || "", mk: !!S.user?.user_metadata?.lead_mk });
   const needsEmail = !S.user?.email || S.user?.is_anonymous;
   const r = lastScan()?.result || {};
   const prios = (r.prioridades || []).map((id) => PARAM_NAMES[id] || id);
