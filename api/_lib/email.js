@@ -101,3 +101,55 @@ export function codeEmail({ token }) {
     }),
   };
 }
+
+// Informe de piel por correo (lo pide la persona al dejar su correo: aviso de servicio)
+const PARAM_ORDER = ["acne", "arrugas", "rojez_rosacea", "manchas", "poros", "ojeras", "hidratacion", "cicatrices"];
+const PARAM_LABEL = { acne: "Acné", arrugas: "Arrugas", rojez_rosacea: "Rojez · rosácea", manchas: "Manchas", poros: "Poros", ojeras: "Ojeras", hidratacion: "Hidratación", cicatrices: "Cicatrices" };
+const ZONE_LABEL = { frente: "frente", entrecejo: "entrecejo", nariz: "nariz", contorno_ojos: "contorno de ojos", menton: "mentón", mejilla_izquierda: "mejilla izquierda", mejilla_derecha: "mejilla derecha", mandibula_izquierda: "mandíbula izquierda", mandibula_derecha: "mandíbula derecha", sien_izquierda: "sien izquierda", sien_derecha: "sien derecha" };
+const LVL = { bien: ["#DDE9DF", "#3F6B4F"], leve: ["#E1DCEC", "#4F4578"], moderado: ["#F3E6D2", "#8A5A1E"], alto: ["#F2DADA", "#8E3B3B"] };
+
+export function reportEmail({ result = {}, date }) {
+  const r = result;
+  const prios = (r.prioridades || []).map((p) => PARAM_LABEL[p] || p);
+  const params = [...(r.parametros || [])].sort((a, b) => PARAM_ORDER.indexOf(a.id) - PARAM_ORDER.indexOf(b.id));
+  const score = Number.isFinite(Number(r.puntuacion_global)) ? Math.round(Number(r.puntuacion_global)) : null;
+  const scoreCard = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:4px 0 20px"><tr><td style="background:#2B2725;border-radius:20px;padding:20px 22px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+<td style="vertical-align:middle;font-family:Georgia,serif;color:#F6F1EC"><span style="font-size:44px;line-height:1">${score ?? "–"}</span><span style="font-size:14px;color:#A99E96"> / 100</span></td>
+<td align="right" style="vertical-align:middle;font-size:12px;line-height:1.5;color:#A99E96">TIPO DE PIEL<br><b style="font-size:18px;color:#F3EDE7;text-transform:capitalize">${esc(r.tipo_piel || "–")}</b></td>
+</tr></table>
+${prios.length ? `<p style="margin:14px 0 0;font-size:12px;color:#A99E96">LO QUE MÁS TE CONVIENE TRABAJAR</p><p style="margin:4px 0 0;font-size:15px;font-weight:700;color:#F3EDE7">${prios.map(esc).join(" · ")}</p>` : ""}
+</td></tr></table>`;
+  const derivar = r.derivar ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px"><tr><td style="background:#F2DADA;border-radius:16px;padding:14px 16px;font-size:14px;line-height:1.5;color:#8E3B3B"><b>Te recomiendo ver a un dermatólogo.</b><br>${esc(r.motivo_derivar || "Hay algo que conviene que revise un profesional.")}</td></tr></table>` : "";
+  const rows = params.map((p) => {
+    const [bg, fg] = LVL[p.nivel] || LVL.leve;
+    const w = Math.max(4, Math.min(100, Number(p.valor) || 0));
+    return `<tr><td style="padding:12px 0;border-top:1px solid #EFE9E3">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-size:15px;font-weight:700;color:#211D1B">${esc(p.nombre || PARAM_LABEL[p.id] || p.id)}</td><td align="right"><span style="display:inline-block;background:${bg};color:${fg};border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;text-transform:capitalize">${esc(p.nivel || "")}</span></td></tr></table>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0 6px"><tr><td style="background:#EFE9E3;border-radius:6px;height:6px;line-height:6px;font-size:0"><table role="presentation" width="${w}%" cellspacing="0" cellpadding="0"><tr><td style="background:${fg};border-radius:6px;height:6px;line-height:6px;font-size:0">&nbsp;</td></tr></table></td></tr></table>
+${p.explicacion ? `<p style="margin:0;font-size:14px;line-height:1.55;color:#5C534D">${esc(p.explicacion)}</p>` : ""}
+${(p.zonas || []).length ? `<p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:#8A8079">Zonas: ${(p.zonas || []).map((z) => esc(ZONE_LABEL[z] || z)).join(", ")}</p>` : ""}
+</td></tr>`;
+  }).join("");
+  const solucion = `${appUrl()}/app/#/suscribirse`;
+  const locked = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0 18px"><tr><td style="background:#F1EBE5;border-radius:20px;padding:20px 18px">
+<p style="margin:0 0 4px;font-size:12px;letter-spacing:1px;color:#8A8079">TU SOLUCIÓN</p>
+<p style="margin:0 0 14px;font-family:Georgia,serif;font-style:italic;font-size:22px;line-height:1.25;color:#211D1B">${esc(r.teaser || "Tu rutina ya está preparada")}</p>
+<a href="${solucion}" style="display:block;text-decoration:none"><img src="${appUrl()}/img/solucion-borrosa.jpg" width="100%" alt="Tu rutina, bloqueada: desbloquéala en la app" style="display:block;width:100%;max-width:468px;border-radius:14px;border:0"></a>
+<p style="margin:14px 0 16px;font-size:14px;line-height:1.55;color:#3A3330">Tu rutina de mañana y noche con productos reales, cuánto usar de cada uno y dónde comprarlo, más tu revisión semanal. <b>Primer mes a 3,49 €</b>, sin permanencia.</p>
+<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:#2B2725;border-radius:999px"><a href="${solucion}" style="display:inline-block;padding:14px 26px;font-size:15px;font-weight:700;color:#F6F3EF;text-decoration:none">Desbloquear mi solución</a></td></tr></table>
+</td></tr></table>`;
+  const highlight = `${scoreCard}${derivar}${rows ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px">${rows}</table>` : ""}${locked}`;
+  const title = r.titulo || "Tu informe de piel";
+  return {
+    subject: "Tu informe de piel de Ifacelis",
+    ...layout({
+      uid: "",
+      preheader: score != null ? `Tu piel: ${score}/100${prios.length ? ` · A trabajar: ${prios.join(", ").toLowerCase()}` : ""}` : "Aquí tienes tu análisis completo.",
+      title,
+      paras: [`Aquí tienes tu informe completo${date ? ` del ${date}` : ""}, zona por zona, para que lo tengas guardado. Es gratis y es tuyo.`],
+      highlight,
+      unsub: false,
+    }),
+  };
+}
